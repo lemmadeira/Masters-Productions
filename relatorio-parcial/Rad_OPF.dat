@@ -1,0 +1,171 @@
+# Critérios de Qualidade de Energia
+
+let FPminInd := 0.92;
+let FPminCap := 0.92;
+let Vmax := 1.05*Vnom/Vbase;     #Per unit
+let Vmin := 0.95*Vnom/Vbase;     #Per unit
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Ajustes das Variáveis de Decisão
+
+let NMC:= 3;			# Número máximo de CB em cada barra
+let qcb:= -300/Sbase;
+
+fix{i in N,(t,s) in SC} Qcb[i,t,s] := 0;
+fix{i in N} Qcbf[i] := 0;
+
+fix{i in N,(t,s) in SC} PsaeC[i,t,s] := 0;
+fix{i in N,(t,s) in SC} PsaeD[i,t,s] := 0;
+
+fix{i in N,(t,s) in SC} Ppv[i,t,s] := 0;
+fix{i in N,(t,s) in SC} Qpv[i,t,s] := 0;
+
+fix{i in N,(t,s) in SC} Pgd[i,t,s] := 0;
+fix{i in N,(t,s) in SC} Qgd[i,t,s] := 0;
+
+for{i in N}{
+
+	if i in CB then {
+		unfix Qcbf[i];
+		for {(t,s) in SC}{
+			unfix Qcb[i,t,s];
+		}
+	}
+	if i in BB then {
+		for {(t,s) in SC}{
+			unfix PsaeC[i,t,s];
+			unfix PsaeD[i,t,s];
+		}
+	}
+	if i in PV then {
+		for {(t,s) in SC}{
+			unfix Ppv[i,t,s];
+			unfix Qpv[i,t,s];
+		}	
+	}
+	if i in GD then {
+		for {(t,s) in SC}{
+			unfix Pgd[i,t,s];
+			unfix Qgd[i,t,s];
+		}
+	}
+}
+
+# Inicializando Variáveis
+
+/* for {y in Y}{
+	for {i in N}{
+		for{(t,s) in SC}{
+			let V2[y,i,t,s] := 1;
+		}
+	}
+} */
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Taxas
+
+let TCD := 0.05; # Taxa de Crescimento da Demanda
+let TD := 0.08;  # Taxa de Desconto 
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Custos de Investimento
+
+let Ccbf := 1563.99;
+let Ccb := 1563.99 + 517.01;
+let Cch := 517.01;
+let Cpv := 200000;
+let Cbb := 63100;
+let Cgd := 318000*0.4;  # Amir Ameli 2014
+
+
+let Esae_nominal := 400; # kWh
+let Esae_min     := 0.1*Esae_nominal;  # kWh
+let Esae_max     := 0.9*Esae_nominal; # kWh
+let Psae_min     := 100/Sbase;  # kW/Sbase
+let Psae_max     := 100/Sbase;   # kW/Sbase
+let eta_sae      := 0.96;
+let beta_sae     := 0.002;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Parâmetros dos Geradores Fotovoltaicos
+
+let FPpv := 0.9;
+let Tamb := 25;
+let PNpv := 400/Sbase;     # kVA
+let deltaPV := -0.0045;
+let NOCT := 45;
+for {(t,s) in SC}{
+	let Tcel[t,s] := Tamb+(NOCT-20)*G[t,s]/800; 
+	let fatGer[t,s] := (G[t,s]/1000) * ( 1 + deltaPV*(Tcel[t,s] - 25) );
+}
+
+let C_PV_OeM := 5;   # $/MWh       Shih-Chieh Hsieh 2011
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Veículos Elétricos
+
+for {i in 0..23}{
+	let dEV[i] := dEVaux[i]/Sbase;
+	let qEV[i] := dEV[i]*tan(acos(0.98));
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+let CostEmi := 10;    # $/ton
+let fatEmi := 2.17;   # kgCO2/kWh 
+let fatEmiGD := 0.63; # kgCO2/kWh
+
+let FPgd := 0.8;
+let C_Fuel := 29;   # $/MWh        # Amir Ameli 2014
+let C_GD_OeM := 7; # $/MWh         # Amir Ameli 2014
+
+# Fator de Demanda
+
+let FatDem[1] := 1;
+for {y in Y:y>1}{
+	let FatDem[y] := (1 + TCD)*FatDem[y-1];
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Conversão dos Dados Para PU
+
+let SgdMAX := 400/Sbase;     # kVA
+
+for {i in N} {
+	let SMAX[i] := SMAX[i]/Sbase;
+	let PD[i] := PD[i]/Sbase;		#Per unit 
+	let QD[i] := QD[i]/Sbase;		#Per unit
+	let SD[i]   := sqrt(PD[i]^2 + QD[i]^2);		#Per unit
+}
+let {i in N} FPD[i]  := 1;		#Per unit
+let {i in N :SD[i]<>0} FPD[i]  := PD[i]/SD[i];		#Per unit
+
+for {(i,j) in B} {
+	let R[i,j]  := R[i,j]/(1000*Vbase^2/Sbase);		#Per unit
+	let X[i,j]  := X[i,j]/(1000*Vbase^2/Sbase);		#Per unit
+	let Z2[i,j] := R[i,j]^2 + X[i,j]^2;
+
+	let Imax[i,j] := (Imax[i,j]/(Sbase/(Vbase*sqrt(3))));		#Per unit 
+	
+	let Gl[i,j] := (R[i,j]/(R[i,j]^2+X[i,j]^2));
+	let Bl[i,j] := (X[i,j]/(R[i,j]^2+X[i,j]^2));
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Fixando Variáveis Operacionais
+
+fix {y in Y, i in N,(t,s) in SC: Tb[i] == 1} V2[y,i,t,s] := (Vnom/Vbase)^2; # Fixando tensão da subestação
+
+fix {y in Y, i in N, (t,s) in SC: Tb[i] <> 1} PS[y,i,t,s] := 0;
+fix {y in Y, i in N, (t,s) in SC: Tb[i] <> 1} QS[y,i,t,s] := 0;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+

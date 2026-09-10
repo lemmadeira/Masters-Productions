@@ -1,0 +1,193 @@
+reset;
+
+/* let tempoIni := time();
+ */
+
+include Rad_OPFvar.dat;
+model Rad_OPF_Fr_Testes.mod;
+data sistema69nos.dat;
+include Rad_OPF.dat;
+option solver gurobi;
+option gurobi_options "mipgap = 0.001 TimeLimit = 600";
+# option gurobi_options "OutputFlag=1; LogFile=gurobi.log; Method=0; Presolve=0; MIPGap=0";
+
+solve;
+
+display solve_result;
+display solve_result_num;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n";
+
+printf'Maguinitude de Tensao:\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for{i in N}{
+		printf"%4d",i;
+		for{(t,s) in SC}{
+			printf"%10.4f",sqrt(V2[y,i,t,s]);
+		}
+		printf"\n";
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n";
+
+/* printf'Fator de Potencia na Subestacao:\n\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for {(t,s) in SC} {
+		let FP[y,t,s] := cos(atan(QS[y,1,t,s]/PS[y,1,t,s]));
+	}
+	for{(t,s) in SC}{
+		printf"%10.4f",FP[y,t,s];
+	}
+	printf"\n";
+} */
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+let tenMin := sqrt(min{y in Y, i in N,(t,s) in SC}V2[y,i,t,s]);
+printf 'Tensao Minima = %.4f',tenMin;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\nBancos de capacitores Fixos\n\n';
+
+for {i in CB}{
+	printf '\n%d',i;
+	printf '\t%d ',Ncbf[i];
+}
+printf '\n\nBancos de capacitores Chaveados\n\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t%s',t;
+}
+for {i in CB}{
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%d ',Ncb[i,t,1];
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\n\t\tBaterias\n\n';
+printf '\n\nAlocacao\n\n';
+for {i in BB}{
+	printf '\n%d',i;
+	printf '\t%d ',Nsae[i];
+}
+printf '\nPotencia\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t\t%s\t',t;
+}
+for {i in BB}{
+	
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%.2f\t%.2f\t ',PsaeC[i,t,1]*Sbase,PsaeD[i,t,1]*Sbase;
+	}
+}
+printf '\nSOC\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t%s\t',t;
+}
+for {i in BB}{
+	
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%.2f\t ',Esae[i,t];
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\nGeradores Distribuidos\n\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t\t%s\t',t;
+}
+for {i in GD}{
+	
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%.2f\t%.2f\t ',Pgd[i,t,1]*Sbase,Qgd[i,t,1]*Sbase;
+	}
+}
+
+printf '\n\nGeradores Fotovoltaicos\n\n';
+for {s in Scen}{
+	printf 'Cenario %s\n\n',s;
+	for {i in PV}{
+		
+		printf '\n%d',i;
+		for {t in PER}{
+			printf '\t%.2f\t%.2f',Ppv[i,t,s]*Sbase,Qpv[i,t,s]*Sbase;
+		}
+	}
+	printf '\n\n';
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  ========= ";
+printf '\n\nPaineis Fotovoltaicos\n\n';
+for {i in PV}{
+	printf '\n%d \t %d',i,Npv[i];
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+printf'Funcao Objetivo    =     %.4f ',FO;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+
+
+let CustoEnergiaSE := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*(CostE[t,s]*PS[y,1,t,s]*1e-3));
+let CustoEmissao := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*(CostEmi*fatEmi*PS[y,1,t,s]*1e-3 + CostEmi*fatEmiGD*sum{i in GD}(Pgd[i,t,s]*1e-3) ));
+let CustoInvBCF := sum{i in CB}(Ccbf*Ncbf[i]);
+let CustoInvBCC := sum{i in CB}(Ccb*Ncb_max[i]);
+let CustoInvPV := sum{i in PV}(Cpv*Npv[i]);
+let CustoInvGD := sum{i in GD}(Cgd*Ngd[i]);
+let CustoOeM := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*((C_GD_OeM)*sum{i in GD}(Pgd[i,t,s]*1e-3) + C_PV_OeM*sum{i in PV}(Ppv[i,t,s]*1e-3)));
+let CustoEnergiaGD := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*(C_Fuel*sum{i in GD}(Pgd[i,t,s]*1e-3)));
+
+/* Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*(((CostE[t,s] + CostEmi*fatEmi)*PS[y,1,t,s]*1e-3) + (C_Fuel + C_GD_OeM + CostEmi*fatEmiGD)*sum{i in GD}(Pgd[i,t,s]*1e-3) + C_PV_OeM*sum{i in PV}(Ppv[i,t,s]*1e-3)))
+				+ sum{i in CB}(Ccbf*Ncbf[i]) + sum{i in CB}(Ccb*Ncb_max[i]) + sum{i in PV}(Cpv*Npv[i]) + sum{i in GD}(Cgd*Ngd[i]);				
+ */
+
+display CustoEnergiaSE;
+display CustoEmissao;
+display CustoInvBCF;
+display CustoInvBCC;
+display CustoInvPV;
+display CustoInvGD;
+display CustoOeM;
+display CustoEnergiaGD;
+display Qcbf;
+display Ncb_max;
+display Qcb;
+
+display FatDem;
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+display time() - startTime;
+
+
+printf'Fator de Potencia na Subestacao:\n\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for {(t,s) in SC} {
+		let FP[y,t,s] := cos(atan(QS[y,1,t,s]/PS[y,1,t,s]));
+	}
+	for{(t,s) in SC}{
+		printf"%10.4f",FP[y,t,s];
+	}
+	printf"\n";
+}
+
+
+
+# FO = 9626268.839   (    C_Fuel = 29   )
+# FO = 9625459.093 otimo
+

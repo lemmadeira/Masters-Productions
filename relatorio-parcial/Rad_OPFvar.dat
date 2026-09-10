@@ -1,0 +1,229 @@
+# Conjuntos do Sistema de Distribuição:
+
+set N;						 # Conjunto de Nós
+set B within N cross N;		 # Conjunto de Barramentos
+set TipoCarga;				 # Conjunto de Tipo de Cargas
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Conjunto de Dados dos Cenários/Horizonte de Planejamento:
+
+set PER;						# Conjunto de Períodos
+set Scen;                       # Conjunto de Cenarios
+set SC within PER cross Scen;   # Conjunto de Periodos/Cenarios
+set Y;                          # Conjunto de Anos de Planejamento
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Parâmetros do Sistema de Distribuição:
+
+param Vbase;
+param Vnom;
+param Sbase;
+
+param R    {B};
+param X    {B};
+param Imax {B};
+param State{B};
+
+param Tb   {N};
+param SMAX {N};
+param PD   {N};
+param QD   {N};
+param SD   {N};
+param FPD   {N};
+param Lambda{N};
+param Tc{N};
+param V0{N};
+
+param PZ{TipoCarga};
+param PI{TipoCarga};
+param PP{TipoCarga};
+param QZ{TipoCarga};
+param QI{TipoCarga};
+param QP{TipoCarga};
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Variaveis Operacionais:
+
+var PS  {Y,N,SC}>=0;
+var QS  {Y,N,SC};
+var V2  {Y,N,SC}>=0;
+var V   {Y,N,SC}>=0;
+var I2  {Y,B,SC}>=0;
+var P   {Y,B,SC};
+var Q   {Y,B,SC};
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Veículos Elétricos
+
+param locEV{N,Y};
+param dEV{PER};
+param dEVaux{PER};
+param qEV{PER};
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# parametros auxiliares
+
+
+param Z2{B};
+param Gl{B};
+param Bl{B};
+
+param rho ;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Critérios de Qualidade de Energia
+
+param Vmax;			    # Limites de Tensão
+param Vmin;			    # Limites de Tensão
+param tenMin;			# Menor Tensão calculada em todas as condições de operação
+ 
+param FPminInd;			# Limites de Fator de Potência
+param FPminCap;			# Limites de Fator de Potência
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Bancos de Capacitores
+
+set CB;
+
+var Ncbf{CB} >=0 integer;
+var Qcbf{N};
+
+var Ncb {CB,SC} >=0 integer;
+var Qcb {N,SC};
+var Ncb_max{N} integer;			# Número máximo de CB em cada barra
+
+param NMC;
+param qcb;				# Potência Nominal do CB
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Geradores Fotovoltaicos
+
+set PV;					# Nós Candidatos
+
+var Ppv{N,SC} >= 0;     # Potência gerada
+var Qpv{N,SC};
+var Npv{PV} binary;		# Variável de Decisão
+
+param G{SC};
+param Prob{SC};
+param FPpv;
+param deltaPV;
+param NOCT;
+param Tcel{SC};
+param Tamb;
+param PNpv;	            # Potência Nominal dos PV (kVA) 
+param fatGer{SC};		# Fator Calculado Para Todos Os Cenários
+
+param C_PV_OeM;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Geradores Despacháveis
+
+set GD;
+
+var Pgd{N,SC} >= 0;
+var Qgd{N,SC};
+var Ngd{GD} binary;
+
+var Sgd{GD};
+param SgdMAX;
+param FPgd;
+param C_Fuel;
+param C_GD_OeM;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Baterias
+
+set BB;
+
+var Nsae{BB} binary;
+var x_sae{BB} binary;
+var Esae{BB,PER};
+var PsaeD{N,SC} >= 0;	  # Potência de descarga
+var PsaeC{N,SC} >= 0;      # Potência de carga
+var Psae_max_var{BB};
+
+param Esae_nominal;
+param Esae_min;
+param Esae_max;
+param Psae_min;
+param Psae_max;
+param eta_sae;
+param beta_sae;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Critérios de Qualidade de Energia
+
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Taxas
+
+param TCD; # Taxa de Crescimento da Demanda
+param TD;  # Taxa de Desconto 
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Custos de Investimentos
+
+param Ccbf;
+param Ccb;
+param Cch;
+param Cpv;
+param Cbb;
+param Cgd;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+param Dt;				# Tempo de um Período (h)
+param FD{SC};			# Fator de Demanda
+param FP{Y,SC};
+param FatDem{Y};
+
+
+
+
+# Conjuntos associados às Variáveis de Decisão
+
+
+
+# Parâmetros associados às Variaveis de Decisão - Investimentos
+
+
+
+
+# Variaveis de Decisão - Investimentos
+
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+param CostEmi;
+param fatEmi;
+param fatEmiGD;
+param CostE{SC};
+param SE;
+
+param CustoEnergiaSE;
+param CustoEmissao;
+param CustoInvBCF;
+param CustoInvBCC;
+param CustoInvPV;
+param CustoInvGD;
+param CustoOeM;
+param CustoEnergiaGD;
+
+param startTime;
+let startTime := time();
