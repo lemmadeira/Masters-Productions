@@ -1,0 +1,409 @@
+
+
+# Conjuntos do Sistema de Distribuição:
+
+set N;						 # Conjunto de Nós
+set B within N cross N;		 # Conjunto de Barramentos
+set TipoCarga;				 # Conjunto de Tipo de Cargas
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Conjunto de Dados dos Cenários/Horizonte de Planejamento:
+
+set PER;						# Conjunto de Períodos
+set Scen;                       # Conjunto de Cenarios
+set SC within PER cross Scen;   # Conjunto de Periodos/Cenarios
+set Y;                          # Conjunto de Anos de Planejamento
+#param cardPER;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Parâmetros do Sistema de Distribuição:
+
+param Vbase;
+param Vnom;
+param Sbase;
+
+param R    {B};
+param X    {B};
+param Imax {B};
+param State{B};
+
+param Tb   {N};
+param SMAX {N};
+param PD   {N};
+param QD   {N};
+param SD   {N};
+param FPD   {N};
+param Lambda{N};
+param Tc{N};
+param V0{N};
+
+param PZ{TipoCarga};
+param PI{TipoCarga};
+param PP{TipoCarga};
+param QZ{TipoCarga};
+param QI{TipoCarga};
+param QP{TipoCarga};
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Variaveis Operacionais:
+
+var PS  {Y,N,SC} >=0;
+var PSn  {Y,N,SC} >=0;
+var QS  {Y,N,SC};
+var V2  {Y,N,SC}>=0;
+var V   {Y,N,SC}>=0;
+var I2  {Y,B,SC}>=0;
+var P   {Y,B,SC};
+var Q   {Y,B,SC};
+
+# Variáveis de folga e excesso para penalização
+
+var PSpen_excesso{Y,N,SC} >= 0;
+var QSpen_folga{Y,N,SC} >= 0;
+var QSpen_excesso{Y,N,SC} >= 0;
+var V2pen_folga{Y,N,SC} >= 0;
+var V2pen_excesso{Y,N,SC} >= 0;
+var I2pen{Y,B,SC} >= 0;
+var S2pen{Y,N,SC} >= 0;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Veículos Elétricos
+
+param locEV{N,Y};
+param dEV{PER};
+param dEVaux{PER};
+param qEV{PER};
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# parametros auxiliares
+
+
+param Z2{B};
+param Gl{B};
+param Bl{B};
+
+param rho ;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Critérios de Qualidade de Energia
+
+param Vmax;			    # Limites de Tensão
+param Vmin;			    # Limites de Tensão
+param tenMin;			# Menor Tensão calculada em todas as condições de operação
+param tenMax;			# Maior Tensão calculada em todas as condições de operação
+param M;
+param w; 				# Peso para cada FO
+param c_pen;
+ 
+param FPminInd;			# Limites de Fator de Potência
+param FPminCap;			# Limites de Fator de Potência
+
+param FPmin;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Bancos de Capacitores
+
+set CB := {4, 7, 14, 19, 25, 29, 30, 31};
+set CB_ord := {1, 2, 3, 4, 5, 6, 7, 8};
+param cardCB := card(CB);
+param CB_list{CB_ord};
+param cont;
+param FCB_pos1;
+param FCB_pos2;
+param SCB_pos1;
+param SCB_pos2;
+
+let CB_list[1] := 4;
+let CB_list[2] := 7;
+let CB_list[3] := 14;
+let CB_list[4] := 19;
+let CB_list[5] := 25;
+let CB_list[6] := 29;
+let CB_list[7] := 30;
+let CB_list[8] := 31;
+
+var Nfcb{CB} >=0;# integer;
+var Qfcb{N};
+
+var Nscb {CB,PER} >=0;# integer;
+var Qscb {N,PER};
+var Nscb_max{N} >= 0;# integer;			# Número máximo de SCB em cada barra
+
+param NMC;
+param qcb;				# Potência Nominal do CB
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+
+
+# Geradores Fotovoltaicos - Geradores independentes
+
+set PV := {3, 5, 8, 12, 15, 19, 22, 25, 28, 29, 30, 31, 32};
+
+set PVin := {8, 15, 25, 32};
+var Npv_in{Y,PV,SC};
+var Qpv_in{Y,N,SC};
+param PNpv_in;
+var Ppv_in{N,SC} >= 0;
+param Ppv_mod;
+
+# Hostin capacity
+
+var Pper{PV} >= 0;
+var Phc{N,SC} >= 0;
+var Qpv_hc{Y,N,SC};
+var Pcurt{PV,SC} >= 0;
+var Ptotal{PVin};
+var Spv{PV} >= 0;
+param Ppv_max;
+param maxCurt;
+#param Spv;
+param errorVVC{0..20};
+param Qpv_hc_error{Y,PV,SC};
+param iterError;
+param PcurtSum{PV};
+param PmaxSum{PV};
+param PcurtSumSum;
+param PmaxSumSum;
+
+# Volta-Var control
+
+param Spv_in;
+param V1pv;
+param V2pv;
+param V3pv;
+param V4pv;
+param Qpv_min;
+param Qpv_max;
+param omega1;
+param omega2;
+param FRV;
+param FRVant;
+
+set VR := {0, 1, 2, 3, 4, 5};
+param Qdisp{PV,SC};    
+param Vp_ext{VR};
+param Qp_ext{VR};
+param tr_v := 5;
+var a_v{VR,Y,PV,SC} binary;
+var theta_v{VR,Y,PV,SC} >= 0;
+set QR := {0, 1, 2, 3, 4};
+param P_ext{QR};
+param uq_ext{QR};
+param tr_q := 5;
+var a_q{QR,PV,SC} binary;
+var theta_q{QR,PV,SC} >= 0;
+
+var Pper_aq{QR,PV,SC} >= 0;
+var Pper_thetaq{QR,PV,SC} >= 0;
+
+var Qdisp1{VR,Y,PV,SC} >= 0;
+var Qdisp2{VR,Y,PV,SC} >= 0;
+
+var Spv_av{VR,Y,PV,SC} >= 0;
+var Spv_thetav{VR,Y,PV,SC} >= 0;
+
+# Geradores Fotovoltaicos - Alocação
+
+set PVds := {9, 22, 29, 33};					# Nós Candidatos
+set PV_ord := {1, 2, 3, 4};
+param cardPV := card(PVds);
+param PV_list{PV_ord};
+param PV_pos1;
+param PV_pos2;
+
+let PV_list[1] := 9;
+let PV_list[2] := 22;
+let PV_list[3] := 29;
+let PV_list[4] := 33;
+
+var Npv{PVds} >= 0;# integer;		# Variável de Decisão
+var Ppv_ds{N,SC} >= 0;     # Potência gerada
+var Qpv_ds{N,SC};     # Potência gerada
+param Spv_ds;				# Potência Nominal do Inversor 
+param PNpv_ds;	            # Potência Nominal dos PV (kVA) 
+
+param NMPV;
+param G{SC};
+param Prob{SC};
+param FPpv;
+param deltaPV;
+param NOCT;
+param Tcel{SC};
+param Tamb;
+param fatGer{SC};		# Fator Calculado Para Todos Os Cenários
+
+param CostPV_OeM;
+param CostE_PV;
+param CostUse;
+param CostConnec;
+param CostGov;
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Geradores Despacháveis
+
+set GD := {15, 32};					# Nós Candidatos
+set GD_ord := {1, 2};
+param cardGD := card(GD);
+param GD_list{GD_ord};
+param GD_pos1;
+param GD_pos2;
+
+let GD_list[1] := 15;
+let GD_list[2] := 32;
+
+var Pgd{N,PER} >= 0;
+var Qgd{N,PER};
+var Ngd{GD} >= 0;# integer;
+var Sgd{GD};
+
+param NMGD;
+param SgdMAX;
+param FPgd;
+param CostFuel;
+param CostGD_OeM;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Baterias
+
+set BB := {5, 8, 15, 22, 25, 29, 32};	
+#set BB := {8, 15, 25, 32};					# Nós Candidatos
+set BB_ord := {1, 2, 3, 4, 5, 6, 7};
+param cardBB := card(BB);
+param BB_list{BB_ord};
+param BB_pos1;
+param BB_pos2;
+
+let BB_list[1] := 5;
+let BB_list[2] := 8;
+let BB_list[3] := 15;
+let BB_list[4] := 22;
+let BB_list[5] := 25;
+let BB_list[6] := 29;
+let BB_list[7] := 32;
+
+var Nsae{BB} >= 0;# integer;
+var Esae{BB,PER};
+var PsaeD{N,PER} >= 0;	  # Potência de descarga
+var PsaeC{N,PER} >= 0;      # Potência de carga
+var beta_sae_var{BB};
+
+param NMB;
+param Esae_nominal;
+param Esae_min;
+param Esae_max;
+param Psae_min;
+param Psae_max;
+param eta_sae;
+param beta_sae;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Critérios de Qualidade de Energia
+
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Taxas
+
+param TCD; # Taxa de Crescimento da Demanda
+param TD;  # Taxa de Desconto 
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Custos de Investimentos
+
+param Cfcb;
+param Cscb;
+param Cch;
+param Cpv;
+param Cbb;
+param Cgd;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+param Dt;				# Tempo de um Período (h)
+param FD{SC};			# Fator de Demanda
+param FP{Y,SC};
+param FatDem{Y};
+
+
+
+
+# Conjuntos associados às Variáveis de Decisão
+
+
+
+# Parâmetros associados às Variaveis de Decisão - Investimentos
+
+
+
+
+# Variaveis de Decisão - Investimentos
+
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+param CostEmi;
+param fatEmi;
+param fatEmiGD;
+param CostE_buy{SC};
+param CostE_sell{SC};
+param SE;
+
+param CustoEnergiaSE;
+param CustoEmissao;
+param CustoInvBCF;
+param CustoInvBCC;
+param CustoInvSAE;
+param CustoInvPV;
+param CustoInvGD;
+param CustoOeM;
+param CustoEnergiaGD;
+param EnergySS;
+param EnergyPV;
+param EnergyPVcurt;
+param EnergyGD;
+
+param HC;
+param CostDSOtoPV;
+param CostLoss;
+param CostEneGD;
+param CostOeMGD;
+param CostInvFCB;
+param CostInvSCB;
+param CostInvESS;
+param CostInvGD;
+param CostTotal;
+param CostSS;
+param EnerSold;
+
+param startTime;
+param bestTime;
+
+param aux;
+param penalty;
+param contRepeat;
+param pen{1..6};
+param cont_w;
+param hosting_capacity{1..6,1..9};
+param operational_costs{1..6,1..9};
+param penalization{1..6,1..9};
+param infeasibility{1..6,1..9};
+param SCB_aux{PER};
+param HC_max;
+param FO1w;
+param FO2w;
+

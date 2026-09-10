@@ -1,0 +1,53 @@
+#let M := 0;
+#drop operacao01;
+#drop operacao02;
+#drop operacao03;
+#drop operacao04;
+#drop operacao05;
+let {i in CB, t in PER} Nscb[i,t] := Nscb_best[i,t];
+let {i in CB} Nfcb[i] := Nfcb_best[i];
+let {i in CB} Nscb_max[i] := Nscb_max_best[i];
+let {i in BB} Nsae[i] := Nsae_best[i];
+#let {i in PV} Npv[i] := Npv_best[i];
+let {i in GD} Ngd[i] := Ngd_best[i];
+#let {y in Y,i in PV, (t,ss) in SC} Npv_in[y,i,t,ss] := Npv_in_ngbh[y,i,t,ss];
+let {i in PV} Pper[i] := Pper_best[i];
+fix {i in CB} Nfcb[i];
+fix {i in CB} Nscb_max[i];
+fix {i in CB, t in PER} Nscb[i,t];
+fix {i in BB} Nsae[i];	
+fix {i in PV} Pper[i];
+#fix {i in PV} Npv[i];
+fix {i in GD} Ngd[i];
+#fix {i in PV, (t,ss) in SC} Phc[i,t,ss];
+
+let iterError := 0;
+let errorVVC[iterError] := 1e10;
+repeat {
+	let iterError := iterError + 1;
+	let errorVVC[iterError] := 0;
+	let iter := iter*2;
+	let {y in Y,i in PV,(t,ss) in SC} Qpv_hc_error[y,i,t,ss] := Qpv_hc[y,i,t,ss];
+	option gurobi_options 'mipgap = 0.0001 timelim = 150 NumericFocus=1 FeasibilityTol=1e-7';
+	#option knitro_options "opttol = 0.001 maxtime = 180 bar_conic_enable=1";
+	solve FO;
+	include verifica_voltvar.run;
+	for {y in Y,i in PV,(t,ss) in SC}{
+		let errorVVC[iterError] := errorVVC[iterError] + abs(Qpv_hc[y,i,t,ss] - Qpv_hc_error[y,i,t,ss]); 
+	}
+	display errorVVC;
+} while ((errorVVC[iterError] < errorVVC[iterError-1]) and iterError<5);
+let {y in Y,i in PV,(t,ss) in SC} Qpv_hc[y,i,t,ss] := Qpv_hc_error[y,i,t,ss];
+
+if sum{y in Y}( (Sbase/Vbase)*(sum {(i,j) in B}sum{(t,s) in SC}(I2pen[y,i,j,t,s]))   +   (Sbase)*(sum{i in N}( sum {(t,s) in SC}(QSpen_folga[y,i,t,s] + QSpen_excesso[y,i,t,s] + V2pen_folga[y,i,t,s] + V2pen_excesso[y,i,t,s] + S2pen[y,i,t,s])))  ) > 0.0001 then {
+
+	printf "\n\n \t\t Solucao Infactivel\n\n";
+	#let iter := iter - 10;
+	
+}
+
+else {
+
+	printf "\n\n\t\t Solucao Factivel\n\n";
+
+}

@@ -1,0 +1,49 @@
+# --------------- NEW VARIABLES AND PARAMETERS --------------- #
+
+param Nfcb_ngbh{CB}     ; #>= 0;
+param Nscb_max_ngbh{CB} ; #>= 0;
+param Nscb_ngbh{CB,PER} ; #>= 0;
+param Nsae_ngbh{BB}     ; #>= 0; # paramater or variable?
+#param Npv_ngbh{PVds}    ; #>= 0;
+param Ngd_ngbh{GD}      ; #>= 0;
+param Qpv_ngbh{Y,PV,SC}; # Foi movido de GVNSvar
+
+param Nfcb_best{CB}     ; #>= 0;
+param Nscb_max_best{CB} ; #>= 0;
+param Nscb_best{CB,PER} ; #>= 0;
+param Nsae_best{BB}     ; #>= 0; # paramater or variable?
+#param Npv_best{PVds}    ; #>= 0;
+param Ngd_best{GD}      ; #>= 0;
+param Pper_best{PV};
+
+
+
+param k_fcb := 1;
+param k_scb := 1;
+param k_sae := 1;
+#param k_pv  := 1;
+param k_gd  := 1;
+param k_pv_hc{Y,PV,SC};
+let {y in Y,i in PV, (t,ss) in SC} k_pv_hc[y,i,t,ss] := 0;
+
+param delta_fcb := 5;
+param delta_scb := 5;
+param delta_sae := 3;
+#param delta_pv  := 3;
+param delta_gd  := 3;
+
+# ------------------------------------------------------------ #
+
+# ------------------ SET THE VARIABLES OF GVNS --------------- #
+
+param s_max    := 3;        # maximum number of neighborhood of GVNS
+var s          := 1;		# neighborhood counter of GVNS
+param k_max    := 2;        # number of neighborhood of VND
+var k          := 1;		# neighborhood counter of VND
+var iter       := 1;        # iteration counter
+param iter_max := 2;        # maximum number of iterations
+param time_max := 60*10000; 
+var incumbente;	            # objective function of incumbent solucion
+var delta_FO;
+
+# ------------------------------------------------------------ #

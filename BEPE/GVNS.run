@@ -1,0 +1,325 @@
+# -------------------- LOADING THE MODEL --------------------- #
+
+#5.27006 5.87571 6.57238 8.1665 11.8517 13.7981 13.988 14.9695 14.9776
+#7223680 7153910 7193700 7318100 7755040 8122190 8491950 9134870 10005600
+
+
+reset;
+
+include OPFvar33.dat;
+data bus33.dat;
+include OPF.dat;
+
+include GVNSvar.dat;
+include VND_ngbh1.mod;
+include VND_ngbh2.mod;
+include VND_ngbh3.mod;
+
+model OPFhc.mod;
+
+# ------------------------------------------------------------ #
+
+# ---------------------- CHOSING THE SOLVER ------------------ #
+
+option solver gurobi;
+#option presolve 0;
+#option knitro_options "opttol = 0.01 maxtime = 180 bar_conic_enable=1";
+
+# ------------------------------------------------------------ #
+
+option log_file 'resultsTests135nodes.txt';
+let contRepeat := 1;
+let cont_w := 0;
+for{ii in 1..6}{
+	for{jj in 1..9}{
+		let infeasibility[ii,jj] := 0;
+	}
+}
+for {i in PV}{
+	for {(t,ss) in SC}{
+		let Qdisp[i,t,ss] := 0;
+	}
+}
+repeat while (contRepeat <= 1) {
+
+	printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+	printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+	printf"\t\t\t\t\t\t\t\t\t\t\t\t\t\t lambda = %.2f\t\t\t\t\t\t\t\t\t\t\t9999999999999999",w;
+	printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+	printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+	# ---------------- INICIALIZING GVNS VARIABLES --------------- #
+
+	include inicializacao_var_restricoes.run;
+	let cont_w := cont_w + 1;
+	option gurobi_options 'mipgap = 0.01 timelim = 150 outlev=1 NumericFocus=1 dualreductions=0 ' ;
+	#option conopt_options "rtolnz=1e-11 epstop=1e-10";
+	if contRepeat == 1	then {
+		#let c_pen := pen[contRepeat];
+		#if w <= 0.25 then {
+		#	let c_pen := 0.0e-5;
+		#}
+		#if w == 0.375 then {
+		#	let c_pen := 0e-5;                
+		#}                                         
+		if w <= 0.50 then {                       
+			let c_pen := 0.0;#5e-6;                
+		}                                         
+		if w == 0.625 then {
+			let c_pen := 0.4e-10;
+		}
+		if w == 0.75 then {
+			let c_pen := 1.6e-10;
+		}
+		if w == 0.875 then {
+			let c_pen := 2.8e-10;
+		}
+		if w == 1.0 then {
+			let c_pen := 4.0e-10;#16 7.2e-5		19 noCurtESS  8.2 noCurt
+		}
+	}
+	display c_pen;
+	display contRepeat;
+	display cont_w;
+
+	let incumbente := (-1)*1e10;		# Defininig an incumbent
+	let startTime := time();
+	let iter := 1;
+
+	# ------------------------------------------------------------ #
+
+	# ----------------------   THE BEGINNING OF ITERATION PROCESS:    GVNS     ------------------------- #
+
+	repeat while (iter <= iter_max and ((time() - startTime) <= time_max) ) {
+
+		printf "\n\n\t\t\t ITERACAO %d\t%d\n\n",iter,k;
+		
+		# -------------- SHAKING MECHANISM ------------- #
+		
+		if k == 1 then {
+		
+			include implementa_GVNS_NGBH1.run;
+			
+		}
+		
+		else {
+		
+			include implementa_GVNS_NGBH2.run;
+			
+		}
+		
+		# --------------------------------------------- #
+		
+		# ------------- LOCAL SEARCH: VND ------------- #	
+		
+		if s == 1 then {
+			
+			include implementa_VND_NGBH1.run;
+			
+		}
+		
+		if s == 2 then {
+		
+			include implementa_VND_NGBH2.run;
+		
+		}
+		
+		if s == 3 then {
+		
+			include implementa_VND_NGBH3.run;
+		
+		}
+		
+		# --------------------------------------------- #
+		
+		# --------- RECHARGING THE ORIGINALS VALUES OF THE NEIGHBORHOOD --------- #
+		
+		let {i in CB} Nfcb_ngbh[i] := Nfcb_best[i];
+		let {i in CB} Nscb_max_ngbh[i] := Nscb_max_best[i];
+		let {i in CB, t in PER} Nscb_ngbh[i,t] := Nscb_best[i,t];
+		let {i in BB} Nsae_ngbh[i] := Nsae_best[i];
+		#let {i in PV} Npv[i] := Npv_best[i];
+		let {i in GD} Ngd[i] := Ngd_best[i];
+		#include verifica_voltvar.run;       ->    Só deve ser executado quando há melhora na incumbente
+			
+		# ----------------------------------------------------------------------- #
+			
+		# ---------------- RESTARTING THE NEIGHBORHOOD --------------- #
+			
+		if k > k_max then {
+		
+			let k := 1;
+			#include implementa_GVNS_NGBH2.run;
+			let iter := iter + 1;
+			
+		}
+		
+		# ------------------------------------------------------------ #
+		
+		printf "\n\n----------------------------------------------------------------------------\n\n";
+		display time() - startTime;
+		printf "----------------------------------------------------------------------------\n\n";
+		
+		# -------------------- OBTAINING THE FINAL RESULTS ------------------- #
+		
+		if iter > iter_max || (time() - startTime >= time_max) then {
+			
+			include final_results.run;
+			
+		}
+		
+		# -------------------------------------------------------------------- #
+	
+	}
+
+	# ------------------------------------------------------------ #
+
+	include disp_variables.run;
+	
+	let w := w + 1.125;
+	if w > 1 then {
+		let w := 0;
+		let contRepeat := contRepeat + 1;
+		let cont_w := 0;
+	}
+	
+	#purge;	
+
+}
+display hosting_capacity;
+display operational_costs;
+display infeasibility;
+#printf'\n\nCapacidade de hospedagem\n';
+#for {ii in 1..2}{
+#	printf'\n';
+#	for {jj in 1..9}{
+#		printf'%.5f\t',hosting_capacity[ii,jj];
+#	}
+#}
+#printf'\n\nCustos Operacionais\n';
+#for {ii in 1..2}{
+#	printf'\n';
+#	for {jj in 1..9}{
+#		printf'%.5f\t',operational_costs[ii,jj];
+#	}
+#}
+#printf'\n\nVerifica infactibilidade\n';
+#for {ii in 1..2}{
+#	printf'\n';
+#	for {jj in 1..9}{
+#		printf'%.5f\t',infeasibility[ii,jj];
+#	}
+#}
+#printf'\n\nPenalidade\n';
+#for {ii in 1..2}{
+#	printf'\n';
+#	for {jj in 1..9}{
+#		printf'%.5f\t',penalization[ii,jj];
+#	}
+#}
+		
+option log_file '';
+
+printf "data;" > inicial_solution.dat;
+printf "var V2 :=\n" >> inicial_solution.dat;
+for {y in Y, i in N, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s] %g\n", y, i, t, ss, V2[y,i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var I2 :=\n" >> inicial_solution.dat;
+for {y in Y, (i,j) in B, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s,%s] %g\n", y, i, j, t, ss, I2[y,i,j,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var P :=\n" >> inicial_solution.dat;
+for {y in Y, (i,j) in B, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s,%s] %g\n", y, i, j, t, ss, P[y,i,j,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Q :=\n" >> inicial_solution.dat;
+for {y in Y, (i,j) in B, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s,%s] %g\n", y, i, j, t, ss, Q[y,i,j,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var PS :=\n" >> inicial_solution.dat;
+for {y in Y, i in N, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s] %g\n", y, i, t, ss, PS[y,i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var PSn :=\n" >> inicial_solution.dat;
+for {y in Y, i in N, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s] %g\n", y, i, t, ss, PSn[y,i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var QS :=\n" >> inicial_solution.dat;
+for {y in Y, i in N, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s] %g\n", y, i, t, ss, QS[y,i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Nfcb :=\n" >> inicial_solution.dat;
+for {i in CB}{
+	printf "[%s] %g\n", i, Nfcb[i] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Nscb_max :=\n" >> inicial_solution.dat;
+for {i in CB}{
+	printf "[%s] %g\n", i, Nscb_max[i] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;;
+
+printf "var Nscb :=\n" >> inicial_solution.dat;
+for {i in CB, t in PER}{
+	printf "[%s,%s] %g\n", i, t, Nscb[i,t] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;;
+
+printf "var Nsae :=\n" >> inicial_solution.dat;
+for {i in BB}{
+	printf "[%s] %g\n", i, Nsae[i] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;;
+
+printf "var PsaeD :=\n" >> inicial_solution.dat;
+for {i in BB, t in PER}{
+	printf "[%s,%s] %g\n", i, t, PsaeD[i,t] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;;
+
+printf "var PsaeC :=\n" >> inicial_solution.dat;
+for {i in BB, t in PER}{
+	printf "[%s,%s] %g\n", i, t, PsaeC[i,t] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Ngd :=\n" >> inicial_solution.dat;
+for {i in GD}{
+	printf "[%s] %g\n", i, Ngd[i] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Pper :=\n" >> inicial_solution.dat;
+for {i in PV}{
+	printf "[%s] %g\n", i, Pper[i] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Pcurt :=\n" >> inicial_solution.dat;
+for {i in PV, (t,ss) in SC}{
+	printf "[%s,%s,%s] %g\n", i, t, ss, Pcurt[i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+
+printf "var Qpv_hc :=\n" >> inicial_solution.dat;
+for {y in Y, i in N, (t,ss) in SC}{
+	printf "[%s,%s,%s,%s] %g\n", y, i, t, ss, Qpv_hc[y,i,t,ss] >> inicial_solution.dat;
+}
+printf ";\n\n" >> inicial_solution.dat;
+

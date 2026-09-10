@@ -1,0 +1,97 @@
+# Inicializa as variaveis e retira as restrições das vizinhanças do VND
+
+for {i in CB}{
+	unfix Nfcb[i];
+	unfix Nscb_max[i];
+	for {t in PER}{
+		unfix Nscb[i,t];
+	}
+}
+for {i in BB}{
+	unfix Nsae[i];
+}
+for {i in PV}{
+	unfix Pper[i];
+}
+for {i in GD}{
+	unfix Ngd[i];
+}
+
+let {i in CB} Nfcb[i]     := round(Uniform(0,NMC));
+let {i in CB} Nscb_max[i] := round(Uniform(0,NMC));
+let {i in CB,t in PER} Nscb[i,t] := round(Uniform(0,Nscb_max[i]));
+let {i in BB} Nsae[i]     := round(Uniform(0,NMB));
+#let {i in PVds} Npv[i]      := round(Uniform(0,NMPV));
+let {i in GD} Ngd[i]      := round(Uniform(0,NMGD));
+let {y in Y, i in PV, (t,ss) in SC} Qpv_hc[y,i,t,ss] := 0;
+let {y in Y, i in PV, (t,ss) in SC} k_pv_hc[y,i,t,ss] := 0;
+
+
+let {i in CB} Nfcb_ngbh[i] := Nfcb[i];
+let {i in CB} Nscb_max_ngbh[i] := Nscb_max[i];
+let {i in CB, t in PER} Nscb_ngbh[i,t] := Nscb[i,t];
+let {i in BB} Nsae_ngbh[i] := Nsae[i];
+#let {i in PVds} Npv_ngbh[i] := Npv[i];
+let {i in GD} Ngd_ngbh[i] := Ngd[i];
+let {y in Y, i in PV, (t,ss) in SC} Qpv_ngbh[y,i,t,ss] := 0;
+
+let {i in CB} Nfcb_best[i] := Nfcb[i];
+let {i in CB} Nscb_max_best[i] := Nscb_max[i];
+let {i in CB, t in PER} Nscb_best[i,t] := Nscb[i,t];
+let {i in BB} Nsae_best[i] := Nsae[i];
+#let {i in PVds} Npv_best[i] := Npv[i];
+let {i in GD} Ngd_best[i] := Ngd[i];
+
+drop neighborhood_VND1_FCB01;
+drop neighborhood_VND1_FCB02;
+drop neighborhood_VND1_SCB01;
+drop neighborhood_VND1_SCB02;
+drop neighborhood_VND1_SCB03;
+drop neighborhood_VND1_SCB04;
+drop neighborhood_VND1_BB01;
+drop neighborhood_VND1_BB02;
+#drop neighborhood_VND1_PV01;
+#drop neighborhood_VND1_PV02;
+drop neighborhood_VND1_GD01;
+drop neighborhood_VND1_GD02;
+
+drop neighborhood_VND2_FCB01;
+drop neighborhood_VND2_FCB02;
+drop neighborhood_VND2_SCB01;
+drop neighborhood_VND2_SCB02;
+drop neighborhood_VND2_SCB03;
+drop neighborhood_VND2_SCB04;
+drop neighborhood_VND2_BB01;
+drop neighborhood_VND2_BB02;
+#drop neighborhood_VND2_PV01;
+#drop neighborhood_VND2_PV02;
+drop neighborhood_VND2_GD01;
+drop neighborhood_VND2_GD02;
+
+drop neighborhood_VND3_FCB01;
+drop neighborhood_VND3_SCB01;
+drop neighborhood_VND3_SCB02;
+drop neighborhood_VND3_BB01;
+#drop neighborhood_VND3_PV01;
+drop neighborhood_VND3_GD01;
+
+#fix {i in CB} Nfcb[i];
+#fix {i in CB} Nscb_max[i];
+#fix {i in CB, t in PER} Nscb[i,t];
+#fix {i in BB} Nsae[i];				
+##fix {i in PVds} Npv[i];
+#fix {i in GD} Ngd[i];
+#fix {y in Y,i in PV, (t,ss) in SC} Npv_in[y,i,t,ss];
+#
+##option gurobi_options "FeasibilityTol = 1e-10  mipgap = 0.001 timelim = 604800 logfreq = 5";
+#solve FO;
+#include verifica_voltvar.run;
+#let incumbente := FO;
+#display FO;
+#unfix {i in CB} Nfcb[i];
+#unfix {i in CB} Nscb_max[i];
+#unfix {i in CB, t in PER} Nscb[i,t];
+#unfix {i in BB} Nsae[i];				
+##unfix {i in PVds} Npv[i];
+#unfix {i in GD} Ngd[i];
+#unfix {y in Y,i in PV, (t,ss) in SC} Npv_in[y,i,t,ss];

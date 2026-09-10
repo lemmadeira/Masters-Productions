@@ -1,0 +1,266 @@
+# Critérios de Qualidade de Energia
+
+let FPminInd := 0.92;
+let FPminCap := 0.92;
+let Vmax := 1.05*Vnom/Vbase;     #Per unit
+let Vmin := 0.93*Vnom/Vbase;     #Per unit			w = 0.5  (1000*I2pen[y,i,j,t,ss]))   +   (sum{i in N}( sum {(t,ss) in SC}(100*QSpen_folga[y,i,t,ss] + 10*QSpen_excesso[y,i,t,ss] + 100*V2pen_folga[y,i,t,ss] + V2pen_excesso[y,i,t,ss] + 1000000*S2pen[y,i,t,ss])))  )
+let M := 1.0e-3;# 1.1e-4 p/ 33 nos;									#   w = 1    (1000*I2pen[y,i,j,t,ss]))   +   (sum{i in N}( sum {(t,ss) in SC}(100*QSpen_folga[y,i,t,ss] + 100*QSpen_excesso[y,i,t,ss] + 100*V2pen_folga[y,i,t,ss] + 100*V2pen_excesso[y,i,t,ss] + 10000000*S2pen[y,i,t,ss])))  )
+let c_pen := 4e-10;#8.0e-9 p/ 4 nodes ;# 4e-10 p/ 33 nodes 7.2e-5;
+let w := 0.0;
+let Ppv_max := 1500/Sbase; #kW/Sbase
+let contRepeat := 1;
+let cont_w := 1;
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Definindo penalizações
+
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] == 0} QSpen_folga[y,i,t,ss] := 0;
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] == 0} QSpen_excesso[y,i,t,ss] := 0;
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] == 0} S2pen[y,i,t,ss] := 0;
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] == 0} PSpen_excesso[y,i,t,ss] := 0;
+
+
+# Ajustes das Variáveis de Decisão
+
+let NMC:= 5;			# Número máximo de CB em cada barra
+let qcb:= -100/Sbase;
+
+fix{i in N,t in PER} Qscb[i,t] := 0;
+fix{i in N} Qfcb[i] := 0;
+
+fix{i in N,t in PER} PsaeC[i,t] := 0;
+fix{i in N,t in PER} PsaeD[i,t] := 0;
+
+fix{i in N,(t,ss) in SC} Ppv_ds[i,t,ss] := 0;
+fix{i in N,(t,ss) in SC} Qpv_ds[i,t,ss] := 0;
+fix{y in Y,i in N,(t,ss) in SC} Qpv_hc[y,i,t,ss] := 0;
+fix{i in N,(t,ss) in SC} Ppv_in[i,t,ss] := 0;
+fix{i in N,(t,ss) in SC} Phc[i,t,ss] := 0;
+
+
+fix{i in N, t in PER} Pgd[i,t] := 0;
+fix{i in N,t in PER} Qgd[i,t] := 0;
+
+for{i in N}{
+
+	if i in CB then {
+		unfix Qfcb[i];
+		for {t in PER}{
+			unfix Qscb[i,t];
+		}
+	}
+	if i in BB then {
+		for {t in PER}{
+			unfix PsaeC[i,t];
+			unfix PsaeD[i,t];
+		}
+	}
+	if i in PVds then {
+		for {(t,ss) in SC}{
+			unfix Ppv_ds[i,t,ss];
+			unfix Qpv_ds[i,t,ss];
+		}	
+	}
+	if i in PV then {
+		for {(t,ss) in SC}{
+			unfix Ppv_in[i,t,ss];
+			unfix Phc[i,t,ss];
+			for {y in Y}{
+				unfix Qpv_hc[y,i,t,ss];
+			}
+		}	
+	}
+	if i in GD then {
+		for {t in PER}{
+			unfix Pgd[i,t];
+			unfix Qgd[i,t];
+		}
+	}
+}
+
+# Inicializando Variáveis
+
+/* for {y in Y}{
+	for {i in N}{
+		for{(t,s) in SC}{
+			let V2[y,i,t,s] := 1;
+		}
+	}
+} */
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Taxas
+
+let TCD := 0.05; # Taxa de Crescimento da Demanda    -  Marcelo 2024
+let TD := 0.08;  # Taxa de Desconto                  -  Juan 2019
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Parâmetros dos Bancos de Baterias
+
+let NMB          := 5;		# Número máximo de Baterias
+let Esae_nominal := 100; # kWh
+let Esae_min     := 0.1*Esae_nominal;  # kWh
+let Esae_max     := 0.9*Esae_nominal; # kWh
+let Psae_min     := 25/Sbase;  # kW/Sbase
+let Psae_max     := 25/Sbase;   # kW/Sbase
+let eta_sae      := 0.96;  				# norberto
+let beta_sae     := 0.002;		# /day
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Parâmetros dos Geradores Fotovoltaicos
+
+#let Ppv_max := 1500/Sbase; #kW/Sbase
+let maxCurt := 0.07;
+#let Spv := 1.1; # pu    Spv = 1.1*Phc  ->  Power of Smart Inverter is 10% bigger than the nominal power P
+
+let NMPV := 4;
+let FPpv := 0.85; # 0.9 ou 0.85
+let Tamb := 25;
+let PNpv_ds := 100/Sbase;     # kW
+let PNpv_in := 100/Sbase;     # kW
+let Spv_ds := 110/Sbase;		# kVA
+let deltaPV := -0.0045;
+let NOCT := 45;
+let Ppv_mod := 400/Sbase;
+
+let Spv_in := 1.1*Ppv_mod;
+let Qpv_max := 0.44*Spv_in;
+let Qpv_min := -0.44*Spv_in;
+let V1pv := 0.92;
+let V2pv := 0.98;
+let V3pv := 1.02;
+let V4pv := 1.08;
+let FRV := 5;
+let omega1 := (0 - Qpv_max)/(V2pv - V1pv);
+let omega2 := (Qpv_min - 0)/(V4pv - V3pv);
+
+for {(t,ss) in SC}{
+	let Tcel[t,ss] := Tamb+(NOCT-20)*G[t,ss]/800; 
+	let fatGer[t,ss] := (G[t,ss]/1000) * ( 1 + deltaPV*(Tcel[t,ss] - 25) );
+	#for {kk in PV}{
+	#	let Ppv_in[kk,t,ss] := PNpv_in*fatGer[t,ss];
+	#	if Ppv_in[kk,t,ss] <= 0.05*Spv_in then {
+	#		let Qdisp[kk,t,ss] := 0;
+	#	}
+	#	else {
+	#		if Ppv_in[kk,t,ss] <= 0.2*Spv_in then {
+	#			let Qdisp[kk,t,ss] := 0.44*Spv_in*Ppv_in[kk,t,ss]/(0.20*PNpv_in);
+	#		}
+	#		else {
+	#			let Qdisp[kk,t,ss] := 0.44*Spv_in;
+	#		}
+	#	}
+	#}
+}
+
+let CostPV_OeM := 5;   # $/MWh       Shih-Chieh Hsieh 2011
+
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Geradores Distribuídos
+
+let NMGD := 4;
+let SgdMAX := 100/Sbase;     # kVA
+let FPgd := 0.8;
+let CostFuel := 29;   # $/MWh        # Amir Ameli 2014
+let CostGD_OeM := 7; # $/MWh         # Amir Ameli 2014
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Emissões
+
+let CostEmi := 10;    # $/ton
+let fatEmi := 2.17;   # kgCO2/kWh 
+let fatEmiGD := 0.63; # kgCO2/kWh
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Fator de Demanda
+
+let FatDem[1] := 1;
+for {y in Y:y>1}{
+	let FatDem[y] := (1 + TCD)*FatDem[y-1];
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Custos de Investimento
+/* #      kVAr  300  600  900
+let Cfcb := 4050;#5150 6550         Benvindo
+let Cscb := 6450;#7650 9550 */
+
+/* let Cfcb[1] := 4050;
+let Cfcb[2] := 5150;
+let Cfcb[3] := 6550;
+let Cfcb[4] := 7500;		# Benvindo
+let Cscb[1] := 6450;
+let Cscb[2] := 7650;
+let Cscb[3] := 9550;
+let Cscb[4] := 10150; */
+
+let Cfcb := 3250/3;
+let Cscb := 4250/3;
+let Cch := 517.01;
+let Cpv := 50000;			#1036 * 100;    ####1600000/5/2; #      Juan Tese 158
+let Cbb := 63100/4;
+let Cgd := 917 * 100;     # Tayenne 2021       |      #######900000*0.5/2;   # Tese Juan  |  #318000*0.2;  # Amir Ameli 2014
+
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Veículos Elétricos
+
+for {i in 0..23}{
+	let dEV[i] := dEVaux[i]/Sbase;
+	let qEV[i] := dEV[i]*tan(acos(0.98));
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Conversão dos Dados Para PU
+
+
+for {i in N} {
+	let SMAX[i] := SMAX[i]/Sbase;
+	let PD[i] := PD[i]/Sbase;		#Per unit 
+	let QD[i] := QD[i]/Sbase;		#Per unit
+	let SD[i]   := sqrt(PD[i]^2 + QD[i]^2);		#Per unit
+}
+let {i in N} FPD[i]  := 1;		#Per unit
+let {i in N :SD[i]<>0} FPD[i]  := PD[i]/SD[i];		#Per unit
+
+for {(i,j) in B} {
+	let R[i,j]  := R[i,j]/(1000*Vbase^2/Sbase);		#Per unit
+	let X[i,j]  := X[i,j]/(1000*Vbase^2/Sbase);		#Per unit
+	let Z2[i,j] := R[i,j]^2 + X[i,j]^2;
+
+	let Imax[i,j] := (Imax[i,j]/(Sbase/(Vbase*sqrt(3))));		#Per unit 
+	
+	let Gl[i,j] := (R[i,j]/(R[i,j]^2+X[i,j]^2));
+	let Bl[i,j] := (X[i,j]/(R[i,j]^2+X[i,j]^2));
+}
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+# Fixando Variáveis Operacionais
+
+fix {y in Y, i in N,(t,ss) in SC: Tb[i] == 1} V2[y,i,t,ss] := (Vnom/Vbase)^2; # Fixando tensão da subestação
+
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] <> 1} PS[y,i,t,ss] := 0;
+fix {y in Y, i in N, (t,ss) in SC: Tb[i] <> 1} QS[y,i,t,ss] := 0;
+
+fix {y in Y, i in N, (t,ss) in SC} PSn[y,i,t,ss] := 0;
+unfix {y in Y, i in N, (t,ss) in SC: Tb[i] == 1} PSn[y,i,t,ss];
+#unfix {y in Y, i in N, ss in Scen: Tb[i] == 1} PSn[y,i,7,ss];
+#unfix {y in Y, i in N, ss in Scen: Tb[i] == 1} PSn[y,i,8,ss];
+#unfix {y in Y, i in N, ss in Scen: Tb[i] == 1} PSn[y,i,9,ss];
+
+# =========  ||  =========  ||  =========  ||  =========  ||  =========
+
+

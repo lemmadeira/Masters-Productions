@@ -1,0 +1,148 @@
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+for {y in Y}{
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+		if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',sqrt(V2[y,i,t,ss]);
+			}
+		}
+	}
+}
+printf '\n\n';
+printf '\n\n';
+for {y in Y}{
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+			if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',Qpv_hc[y,i,t,ss]/Qdisp[i,t,ss];
+			}
+		}
+	}
+}
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+for {(t,ss) in SC}{
+	for {kk in PV}{
+		if Phc[kk,t,ss] < 0.05*Pper[kk] then {
+			let Qdisp[kk,t,ss] := 0;
+		}
+		else {
+			if Phc[kk,t,ss] < 0.2*Pper[kk] then {
+				let Qdisp[kk,t,ss] := 2.2*(Spv[kk]/Pper[kk])*Phc[kk,t,ss];
+			}
+			else {
+				let Qdisp[kk,t,ss] := 0.44*Spv[kk];
+			}
+		}
+	}
+}
+
+for {y in Y}{
+	for {i in PV}{
+		for {(t,ss) in SC}{
+			if (sqrt(V2[y,i,t,ss]))<=V1pv then {
+				let k_pv_hc[y,i,t,ss] :=  Qdisp[i,t,ss]*(0.2/iter) ;#abs(Qpv_hc[y,i,t,ss] - Qdisp[i,t,ss])/(FRV*iter);
+				let Qpv_ngbh[y,i,t,ss] := Qdisp[i,t,ss];
+				let Qpv_hc[y,i,t,ss] := Qdisp[i,t,ss];
+			}
+			else {
+				if (sqrt(V2[y,i,t,ss]))<=V2pv then { 
+					let k_pv_hc[y,i,t,ss] := Qdisp[i,t,ss]*(1 - (sqrt(V2[y,i,t,ss]) - V1pv)/(V2pv - V1pv)) * (0.2/iter) ;#abs(Qpv_hc[y,i,t,ss] - (Qdisp[i,t,ss] + (-Qdisp[i,t,ss]/(V2pv - V1pv))*(sqrt(V2[y,i,t,ss]) - V1pv)) )/(FRV*iter);
+					let Qpv_ngbh[y,i,t,ss] := Qdisp[i,t,ss]*(1 - (sqrt(V2[y,i,t,ss]) - V1pv)/(V2pv - V1pv));
+					let Qpv_hc[y,i,t,ss] := Qdisp[i,t,ss]*(1 - (sqrt(V2[y,i,t,ss]) - V1pv)/(V2pv - V1pv));
+				}
+				else {
+					if (sqrt(V2[y,i,t,ss]))<=V3pv then {
+						let k_pv_hc[y,i,t,ss] := 2.2*Phc[i,t,ss]*(0.2/iter) ;#abs(Qpv_hc[y,i,t,ss] - 0)/(FRV/iter);
+						let Qpv_ngbh[y,i,t,ss] := 0;
+						let Qpv_hc[y,i,t,ss] := 0;
+					}
+					else {
+						if (sqrt(V2[y,i,t,ss]))<=V4pv then {
+							let k_pv_hc[y,i,t,ss] := abs(-Qdisp[i,t,ss]*( 1 + (sqrt(V2[y,i,t,ss]) - V4pv)/(V4pv-V3pv))) * (0.2/iter) ;#abs(Qpv_hc[y,i,t,ss] + ((-Qdisp[i,t,ss]) + (-Qdisp[i,t,ss]/(V4pv-V3pv))*(sqrt(V2[y,i,t,ss]) - V4pv)) )/(FRV*iter);
+							let Qpv_ngbh[y,i,t,ss] := -Qdisp[i,t,ss]*( 1 + (sqrt(V2[y,i,t,ss]) - V4pv)/(V4pv-V3pv));
+							let Qpv_hc[y,i,t,ss] := -Qdisp[i,t,ss]*( 1 + (sqrt(V2[y,i,t,ss]) - V4pv)/(V4pv-V3pv));
+						}
+						else {
+							let k_pv_hc[y,i,t,ss] := abs(- Qdisp[i,t,ss]) * (0.2/iter) ;#abs(Qpv_hc[y,i,t,ss] - Qdisp[i,t,ss])/(FRV*iter);
+							let Qpv_ngbh[y,i,t,ss] := - Qdisp[i,t,ss];
+							let Qpv_hc[y,i,t,ss] := - Qdisp[i,t,ss];
+						}
+					}
+				}
+			} 
+		}
+	}
+}
+
+
+
+
+#printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+#
+#for {y in Y}{
+#	for {i in PV}{
+#		#printf '\n';
+#		for {(t,ss) in SC}{
+#		if Qdisp[i,t,ss] > 0 then {
+#				printf '\t%.4f',sqrt(V2[y,i,t,ss]);
+#			}
+#		}
+#	}
+#}
+#printf '\n\n';
+#printf '\n\n';
+#for {y in Y}{
+#	for {i in PV}{
+#		#printf '\n';
+#		for {(t,ss) in SC}{
+#			if Qdisp[i,t,ss] > 0 then {
+#				printf '\t%.4f',Qpv_hc[y,i,t,ss]/Qdisp[i,t,ss];
+#			}
+#		}
+#	}
+#}
+#printf '\n\n';
+
+/* param FRV := 4;
+param k_pv_in;
+param Qpv_max := 0.44;
+param Qpv_min = -0.44;
+param V1pv := 0.92;
+param V2pv := 0.98;
+param V3pv := 1.02;
+param V4pv := 1.08;
+param omega1 := (0 - Qpv_max)/(V2pv - V1pv);
+param omega2 := (Qpv_min - 0)/(V4pv - V3pv);
+param V2 := 0.8^2;
+param Qpv_in := 0;
+
+for {i in 1..1}{
+
+	if (sqrt(V2))<=V1pv then {
+		let k_pv_in := abs(Qpv_in - Qpv_max)/FRV;
+	}
+	else {
+		if (sqrt(V2))<=V2pv then { 
+			let k_pv_in := abs(Qpv_in - (Qpv_max + omega1*(sqrt(V2) - V1pv)) )/FRV;
+		}
+		else {
+			if (sqrt(V2))<=V3pv then {
+				let k_pv_in := abs(Qpv_in - 0)/FRV;
+			}
+			else {
+				if (sqrt(V2))<=V4pv then {
+					let k_pv_in := abs(Qpv_in - (Qpv_min + omega2*(sqrt(V2) - V4pv)) )/FRV;
+				}
+				else {
+					let k_pv_in := abs(Qpv_in - Qpv_min)/FRV;
+				}
+			}
+		}
+	} 
+	display k_pv_in;
+
+} */

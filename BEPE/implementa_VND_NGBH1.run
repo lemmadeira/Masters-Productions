@@ -1,0 +1,102 @@
+#VND - neighborhood 1
+
+restore neighborhood_VND1_FCB01;
+restore neighborhood_VND1_FCB02;
+restore neighborhood_VND1_SCB01;
+restore neighborhood_VND1_SCB02;
+restore neighborhood_VND1_SCB03;
+restore neighborhood_VND1_SCB04;
+restore neighborhood_VND1_BB01;
+restore neighborhood_VND1_BB02;
+#restore neighborhood_VND1_PV01;
+#restore neighborhood_VND1_PV02;
+restore neighborhood_VND1_GD01;
+restore neighborhood_VND1_GD02;
+	
+#for {i in CB}{
+#	printf '\n%d',i;
+#	for {t in PER}{
+#		printf '\t%d\t%d\t%d\t',Nscb_max[i],Nscb_ngbh[i,t],Nscb[i,t];
+#	}
+#}
+	
+#Solve the model
+printf "\n\n\t\t ENTROU s = %d\n\n",s;
+solve FO;
+
+#for {i in CB}{
+#	printf '\n%d',i;
+#	for {t in PER}{
+#		printf '\t%d\t%d\t%d\t',Nscb_max[i],Nscb_ngbh[i,t],Nscb[i,t];
+#	}
+#}
+#Remove constraints
+
+drop neighborhood_VND1_FCB01;
+drop neighborhood_VND1_FCB02;
+drop neighborhood_VND1_SCB01;
+drop neighborhood_VND1_SCB02;
+drop neighborhood_VND1_SCB03;
+drop neighborhood_VND1_SCB04;
+drop neighborhood_VND1_BB01;
+drop neighborhood_VND1_BB02;
+#drop neighborhood_VND1_PV01;
+#drop neighborhood_VND1_PV02;
+drop neighborhood_VND1_GD01;
+drop neighborhood_VND1_GD02;
+
+#Atualiza incumbente, s, k e variaveis
+
+if FO > incumbente then {
+	
+	let incumbente := FO;
+	printf "\n\n\n\n\n\t\t\t\t\t\t\t\t MELHOROU s = %d\t\t\tFO = %.2f\n\n\n\n\n",s,incumbente;
+	
+	# Integraliza variaveis
+	let {i in CB} Nfcb[i] := round(Nfcb[i]);
+	let {i in CB,t in PER} Nscb[i,t] := round(Nscb[i,t]);
+	let {i in CB} Nscb_max[i] := round(Nscb_max[i]);
+	let {i in BB} Nsae[i] := round(Nsae[i]);
+	#let {i in PVds} Npv[i] := round(Npv[i]);
+	let {i in GD} Ngd[i] := round(Ngd[i]);
+	
+	# Atualiza os valores atuais das variáveis de decisão
+	let {i in CB} Nfcb_ngbh[i] := Nfcb[i];
+	let {i in CB} Nscb_max_ngbh[i] := Nscb_max[i];
+	let {i in CB, t in PER} Nscb_ngbh[i,t] := Nscb[i,t];
+	let {i in BB} Nsae_ngbh[i] := Nsae[i];
+	#let {i in PVds} Npv_ngbh[i] := Npv[i];
+	let {i in GD} Ngd_ngbh[i] := Ngd[i];
+	
+	# Atualiza solução incumbente
+	let {i in CB} Nfcb_best[i] := Nfcb[i];
+	let {i in CB,t in PER} Nscb_best[i,t] := Nscb[i,t];
+	let {i in CB} Nscb_max_best[i] := Nscb_max[i];
+	let {i in BB} Nsae_best[i] := Nsae[i];
+	#let {i in PVds} Npv_best[i] := Npv[i];
+	let {i in GD} Ngd_best[i] := Ngd[i];
+	let {i in PV} Pper_best[i] := Pper[i];
+	
+	include verifica_voltvar.run;
+	
+	# Atualiza vizinhança
+	let s := 1;
+	let k := 1;
+	let iter := iter + 1;
+	let bestTime := time() - startTime;
+	
+	printf "\nSlack Variables Sum  = %.12f\n",(sum{y in Y}((sum {(i,j) in B}sum{(t,ss) in SC}(I2pen[y,i,j,t,ss]))) + sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_folga[y,i,t,ss] + V2pen_excesso[y,i,t,ss] + S2pen[y,i,t,ss]))));
+
+	printf "\n\nI2pen = %.12f\n", sum{y in Y}((sum {(i,j) in B}sum{(t,ss) in SC}(I2pen[y,i,j,t,ss])));
+	printf "\nV2pen_folga  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_folga[y,i,t,ss])));
+	printf "\nV2pen_excesso  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_excesso[y,i,t,ss])));
+	printf "\nS2pen  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(S2pen[y,i,t,ss])));
+	
+}
+
+else {
+	
+	printf "\n\n\t\t NAO MELHOROU s = %d\n\n",s;
+	let s := s + 1;
+	
+}

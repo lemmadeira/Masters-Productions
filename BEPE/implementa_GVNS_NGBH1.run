@@ -1,0 +1,89 @@
+# Fixed Capacitor Bank
+let cont := 0;
+let FCB_pos1 := CB_list[round(Uniform(1,cardCB))];
+let FCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+repeat while (Nfcb_best[FCB_pos1] == Nfcb_best[FCB_pos2] and cont < 10) {
+
+	let FCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+	let cont := cont + 1;
+	
+}
+
+let Nfcb_ngbh[FCB_pos1] := Nfcb_best[FCB_pos2];
+let Nfcb_ngbh[FCB_pos2] := Nfcb_best[FCB_pos1];
+
+# Swichtable capacitor bank (max)
+let cont := 0;
+let SCB_pos1 := CB_list[round(Uniform(1,cardCB))];
+let SCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+repeat while (Nscb_max_best[SCB_pos1] == Nscb_max_best[SCB_pos2] and cont < 10) {
+
+	let SCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+	let cont := cont + 1;
+	
+}
+
+let Nscb_max_ngbh[SCB_pos1] := Nscb_max_best[SCB_pos2];
+let Nscb_max_ngbh[SCB_pos2] := Nscb_max_best[SCB_pos1];
+let {t in PER} Nscb_ngbh[SCB_pos1,t] := Nscb_best[SCB_pos2,t];
+let {t in PER} Nscb_ngbh[SCB_pos2,t] := Nscb_best[SCB_pos1,t];
+
+# Swichtable capacitor bank (switchtablement)
+for {i in CB}{
+	let cont := 0;
+	let SCB_pos1 := round(Uniform(0,23));
+	let SCB_pos2 := round(Uniform(0,23));
+	repeat while (Nscb_best[i,SCB_pos1] == Nscb_best[i,SCB_pos2] and cont < 2) {
+
+		let SCB_pos2 := round(Uniform(0,23));
+		let cont := cont + 1;
+		
+	}
+
+	let Nscb_ngbh[i,SCB_pos1] := Nscb_best[i,SCB_pos2];
+	let Nscb_ngbh[i,SCB_pos2] := Nscb_best[i,SCB_pos1];
+}
+
+# Bateries
+let cont := 0;
+let BB_pos1 := BB_list[round(Uniform(1,cardBB))];
+let BB_pos2 := BB_list[round(Uniform(1,cardBB))];
+repeat while (Nsae_best[BB_pos1] == Nsae_best[BB_pos2] and cont < 10) {
+
+	let BB_pos2 := BB_list[round(Uniform(1,cardBB))];
+	let cont := cont + 1;
+	
+}
+
+let Nsae_ngbh[BB_pos1] := Nsae_ngbh[BB_pos2];
+let Nsae_ngbh[BB_pos2] := Nsae_ngbh[BB_pos1];
+
+# Distributed generators
+let cont := 0;
+let GD_pos1 := GD_list[round(Uniform(1,cardGD))];
+let GD_pos2 := GD_list[round(Uniform(1,cardGD))];
+repeat while (Ngd_best[GD_pos1] == Ngd_best[GD_pos2] and cont < 10) {
+
+	let GD_pos2 := GD_list[round(Uniform(1,cardGD))];
+	let cont := cont + 1;
+	
+}
+
+let Ngd_ngbh[GD_pos1] := Ngd_best[GD_pos2];
+let Ngd_ngbh[GD_pos2] := Ngd_best[GD_pos1];
+
+## Photovoltaic panel
+#let cont := 0;
+#let PV_pos1 := PV_list[round(Uniform(1,cardPV))];
+#let PV_pos2 := PV_list[round(Uniform(1,cardPV))];
+#repeat while (Npv_best[PV_pos1] == Npv_best[PV_pos2] and cont < 10) {
+#
+#	let PV_pos2 := PV_list[round(Uniform(1,cardPV))];
+#	let cont := cont + 1;
+#	
+#}
+#
+#let Npv_ngbh[PV_pos1] := Npv_best[PV_pos2];
+#let Npv_ngbh[PV_pos2] := Npv_best[PV_pos1];
+#
+

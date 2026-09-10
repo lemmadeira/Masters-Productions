@@ -1,0 +1,454 @@
+# Imprime os resultados
+
+printf "\nSlack Variables Sum  = %.12f\n",(sum{y in Y}((sum {(i,j) in B}sum{(t,ss) in SC}(I2pen[y,i,j,t,ss]))) + sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_folga[y,i,t,ss] + V2pen_excesso[y,i,t,ss] + S2pen[y,i,t,ss]))));
+
+printf "\n\nI2pen = %.12f\n", sum{y in Y}((sum {(i,j) in B}sum{(t,ss) in SC}(I2pen[y,i,j,t,ss])));
+printf "\nV2pen_folga  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_folga[y,i,t,ss])));
+printf "\nV2pen_excesso  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(V2pen_excesso[y,i,t,ss])));
+printf "\nS2pen  = %.12f\n",sum{y in Y}(sum{i in N}( sum {(t,ss) in SC}(S2pen[y,i,t,ss])));
+
+
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n";
+
+#printf'Maguinitude de Tensao:\n';
+#for{y in Y}{
+#	printf"\nAno = %4d\n\n",y;
+#	for{i in N}{
+#		printf"%4d",i;
+#		for{(t,ss) in SC}{
+#			printf"%10.4f",sqrt(V2[y,i,t,ss]);
+#		}
+#		printf"\n";
+#	}
+#}
+#
+#printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+let tenMin := sqrt(min{y in Y, i in N,(t,ss) in SC}V2[y,i,t,ss]);
+printf 'Tensao Minima = %.4f',tenMin;
+let tenMax := sqrt(max{y in Y, i in N,(t,ss) in SC}V2[y,i,t,ss]);
+printf '\n\n\nTensao Maxima = %.4f\n\n',tenMax;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\nBancos de capacitores Fixos\n\n';
+
+for {i in CB}{
+	printf '\n%d',i;
+	printf '\t%d ',Nfcb[i];
+}
+printf '\n\nBancos de capacitores Chaveados\n\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t%s',t;
+}
+for {i in CB}{
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%d ',Nscb[i,t];
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\n\t\tBaterias\n\n';
+printf '\n\nAlocacao\n\n';
+for {i in BB}{
+	printf '\n%d',i;
+	printf '\t%d ',Nsae[i];
+}
+printf '\nPotencia\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t\t%s\t',t;
+}
+for {i in BB}{
+	
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%.2f\t%.2f\t ',PsaeC[i,t]*Sbase,PsaeD[i,t]*Sbase;
+	}
+}
+printf '\nSOC\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t%s\t',t;
+}
+for {i in BB}{
+	
+	if Nsae[i]>0 then {
+		printf '\n%d',i;
+		for {t in PER}{
+			printf '\t%.2f\t ',Esae[i,t]/(Esae_nominal*Nsae[i]);
+		}
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf '\n\nGeradores Distribuidos\n\n';
+printf 'Hora';
+for {t in PER}{
+	printf '\t\t%s\t',t;
+}
+for {i in GD}{
+	
+	printf '\n%d',i;
+	for {t in PER}{
+		printf '\t%.2f\t%.2f\t ',Pgd[i,t]*Sbase,Qgd[i,t]*Sbase;
+	}
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  ========= ";
+
+#printf '\n\nGeradores Fotovoltaicos\n\n';
+#for {ss in 1..2}{
+#	printf 'Cenario %s\n\n',ss;
+#	for {i in PVds}{
+#		
+#		printf '\n%d',i;
+#		for {t in PER}{
+#			printf '\t%.2f\t%.2f',Phc[i,t,ss]*Sbase,Qpv_hc[i,t,ss]*Sbase;
+#		}
+#	}
+#	printf '\n\n';
+#}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  ========= ";
+
+#printf '\n\nPaineis Fotovoltaicos\n\n';
+#for {i in PVds}{
+#	printf '\n%d \t %d',i,Npv[i];
+#}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf'Funcao Objetivo    =     %.4f ',FO;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+let penalty := c_pen*Sbase*365*Dt* sum{y in Y,(i,j) in B,(t,ss) in SC}(Prob[t,ss]*I2[y,i,j,t,ss]);
+let FO1w := (w)*(1/(15))*( sum{i in PV}Pper[i]);
+let FO2w := -(1-w)*(1/2250000)*( Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*( 
+															sum{(i,j) in B}(R[i,j]*I2[y,i,j,t,ss]*1e-3 * CostE_buy[t,ss])
+															+ (PS[y,1,t,ss]* 1e-3 *CostE_buy[t,ss])
+															- (PSn[y,1,t,ss]* 1e-3 *CostE_buy[t,ss]*0.6)
+															+ (CostFuel + CostGD_OeM)*sum{i in GD}(Pgd[i,t]*1e-3)
+															+ sum{i in PV}(Phc[i,t,ss]* 1e-3 *CostE_PV) 
+															)))
+															+ sum{i in CB}(Cfcb*Nfcb[i]) + sum{i in CB}(Cscb*Nscb_max[i]) + sum{i in BB}(Cbb*Nsae[i]) + sum{i in GD}(Cgd*Ngd[i]) );
+let HC := Sbase*sum{i in PV}Pper[i]*1e-3;
+let CostSS := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(CostE_buy[t,ss]*PS[y,1,t,ss]*1e-3)));
+let EnerSold := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*((PSn[y,1,t,ss]* 1e-3 *CostE_buy[t,ss]*0.6))));
+let CostDSOtoPV := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(sum{i in PV}(Phc[i,t,ss]*1e-3 * CostE_PV))));
+let CostLoss := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(sum{(i,j) in B}(R[i,j]*I2[y,i,j,t,ss]*1e-3 * CostE_buy[t,ss]))));
+let CostInvFCB := sum{i in CB}(Cfcb*Nfcb[i]);
+let CostInvSCB := sum{i in CB}(Cscb*Nscb_max[i]);
+let CostInvESS := sum{i in BB}(Cbb*Nsae[i]);
+let CostInvGD := sum{i in GD}(Cgd*Ngd[i]);
+let CostEneGD := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(CostFuel*sum{i in GD}(Pgd[i,t]*1e-3))));
+let CostOeMGD := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(CostGD_OeM*sum{i in GD}(Pgd[i,t]*1e-3))));;
+let CostTotal := CostLoss + CostSS - EnerSold + CostDSOtoPV + CostEneGD + CostOeMGD + CostInvFCB + CostInvSCB + CostInvESS + CostInvGD;
+let EnergyGD := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(sum{i in GD}(Pgd[i,t]*1e-3))));
+let EnergySS := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(PS[y,1,t,ss]*1e-3)));
+let EnergyPV := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(sum{i in PV}(Pper[i]*fatGer[t,ss]*1e-3))));
+let EnergyPVcurt := Sbase*365*Dt * sum{y in Y} (( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(sum{i in PV}(Pcurt[i,t,ss]*1e-3))));
+
+display bestTime;
+printf'\nPenalization =\t%.5f\n\n',penalty;
+printf'\nFO1 =\t%.5f\n\n',FO1w;
+printf'\nFO2 =\t%.5f\n\n',FO2w;
+display HC;
+display CostSS;
+display EnerSold;
+display CostDSOtoPV;
+display CostLoss;
+display CostEneGD;
+display CostOeMGD;
+display CostInvFCB;
+display CostInvSCB;
+display CostInvESS;
+display CostInvGD;
+display CostTotal;
+display EnergyGD;
+display EnergySS;
+display EnergyPV;
+display EnergyPVcurt;
+
+
+for {i in PV}{
+	#printf "\n%d",i;
+	printf "\t%.2f",Pper[i]*Sbase*1e-3;
+}
+#let CustoInvBCF := sum{i in CB}(Cfcb*Nfcb[i]);
+#let CustoInvBCC := sum{i in CB}(Cscb*Nscb_max[i]);
+#let CustoInvSAE := sum{i in BB}(Cbb*Nsae[i]);
+#let CustoInvPV := sum{i in PVds}(Cpv*Npv[i]);
+#let CustoInvGD := sum{i in GD}(Cgd*Ngd[i]);
+#let CustoOeM := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*((C_GD_OeM)*sum{i in GD}(Pgd[i,t]*1e-3) + C_PV_OeM*sum{i in PVds}(Ppv_ds[i,t,ss]*1e-3)));
+#let CustoEnergiaGD := Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,ss) in SC} Prob[t,ss]*(C_Fuel*sum{i in GD}(Pgd[i,t]*1e-3)));
+
+/* Sbase*365*Dt * sum{y in Y} ( 1 / ((1 + TD)^(y-1))) * (sum{(t,s) in SC} Prob[t,s]*(((CostE[t,s] + CostEmi*fatEmi)*PS[y,1,t,s]*1e-3) + (C_Fuel + C_GD_OeM + CostEmi*fatEmiGD)*sum{i in GD}(Pgd[i,t,s]*1e-3) + C_PV_OeM*sum{i in PV}(Ppv[i,t,s]*1e-3)))
+				+ sum{i in CB}(Ccbf*Ncbf[i]) + sum{i in CB}(Ccb*Ncb_max[i]) + sum{i in PV}(Cpv*Npv[i]) + sum{i in GD}(Cgd*Ngd[i]);				
+ */
+
+#display CustoEnergiaSE;
+#display CustoEmissao;
+#display CustoInvBCF;
+#display CustoInvBCC;
+#display CustoInvSAE;
+#display CustoInvPV;
+#display CustoInvGD;
+#display CustoOeM;
+#display CustoEnergiaGD;
+
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\nQfcb\n\n";
+
+for {i in CB}{
+	printf "\n%d\t%f",i,Qfcb[i]*Sbase;
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\nQscb\n\n";
+
+for {t in PER}{
+	printf "\t%d",t;
+}
+for {i in CB}{
+	printf "\n%d",i;
+	for {t in PER}{
+		printf "\t%f",Qscb[i,t]*Sbase;
+	}
+}
+
+
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+display time() - startTime;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  ========= \n\nVoltage - Volt-Var Control   \n\n";
+
+for {y in Y}{
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+		if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',sqrt(V2[y,i,t,ss]);
+			}
+		}
+	}
+}
+printf '\n\nReactive Power Output - Volt-Var Control';
+printf '\n\n';
+for {y in Y}{
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+			if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',Qpv_hc[y,i,t,ss]/Qdisp[i,t,ss];
+			}
+		}
+	}
+}
+printf '\n\nReactive Power Available - Volt-Var Control';
+
+printf '\n\n';
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+			if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',Qdisp[i,t,ss]/Spv[i];
+			}
+		}
+	}
+printf '\n\n';
+
+printf '\n\nActive Power Output - Volt-Var Control';
+
+printf '\n\n';
+	for {i in PV}{
+		#printf '\n';
+		for {(t,ss) in SC}{
+			if Qdisp[i,t,ss] > 0 then {
+				printf '\t%.4f',Phc[i,t,ss]/Pper[i];
+			}
+		}
+	}
+printf '\n\n';
+
+
+
+#
+#printf'Fator de Potencia na Subestacao:\n\n';
+#for{y in Y}{
+#	printf"\nAno = %4d\n\n",y;
+#	for {(t,ss) in SC} {
+#		let FP[y,t,ss] := cos(atan(QS[y,1,t,ss]/PS[y,1,t,ss]));
+#	}
+#	for{(t,ss) in SC}{
+#		printf"%10.4f",FP[y,t,ss];
+#	}
+#	printf"\n";
+#}
+#
+#
+#let FPmin := min{y in Y,(t,ss) in SC}FP[y,t,ss];
+#printf '\n\nFator de Potencia Minimo = %.4f',FPmin;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\nPotencia na subestacao vs Demanda + Perdas\n\n";
+
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for{(t,ss) in SC}{
+		printf"%.2f\t%.2f\t",(PS[y,1,t,ss]),(sum{i in N}(PD[i]*FD[t,ss]*FatDem[y] + locEV[i,y]*dEV[t]) + sum{(i,j) in B}(I2[y,i,j,t,ss]*R[i,j]) - sum{i in PV}(Phc[i,t,ss]) + sum{i in BB}(PsaeC[i,t] - PsaeD[i,t])) - sum{i in GD}(Pgd[i,t]);
+	}
+	printf"\n";
+}
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n\t\tConferindo fluxo de potencia\n\n";
+
+#printf"\n\n";
+#for{(i,j) in B}{
+#	printf"\n";
+#	for{(t,ss) in SC}{
+#		printf"%.4f\t%.4f\t",V2[1,j,t,ss]*I2[1,i,j,t,ss],P[1,i,j,t,ss]^2 + Q[1,i,j,t,ss]^2;
+#	}
+#}
+#printf"\n\n";
+#for{(i,j) in B}{
+#	printf"\n";
+#	for{(t,ss) in SC}{
+#		printf"%.4f\t%.4f\t",V2[5,j,t,ss]*I2[5,i,j,t,ss],P[5,i,j,t,ss]^2 + Q[5,i,j,t,ss]^2;
+#	}
+#}
+#
+#printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+
+# ----------------------- RUNNING TIME ----------------------- #
+
+printf "\n\n----------------------------------------------------------------------------\n\n";
+display time() - startTime;
+printf "----------------------------------------------------------------------------\n\n";
+
+display sum{i in N}(PD[i]);
+
+
+printf'Potencia na Subestacao:\n\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for{(t,ss) in SC}{
+		printf"%10.4f\t%10.4f\t\t",PS[y,1,t,ss],PSn[y,1,t,ss];
+	}
+	printf"\n";
+}
+printf"\n\n Potencia minima Subestacao = -%.4f\n\n\n",max{y in Y,(t,ss) in SC}PSn[y,1,t,ss]*Sbase;
+printf"\n\n Potencia maxima Subestacao = %.4f\n\n\n",max{y in Y,(t,ss) in SC}PS[y,1,t,ss]*Sbase;
+printf"\n\n Corrente maxima nas linhas = %.4f\n\n\n",(Sbase/(Vbase*sqrt(3)))*sqrt(max{y in Y,(i,j) in B,(t,ss) in SC}I2[y,i,j,t,ss]);
+printf"\n\nCurrent\n\n";
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+let tenMin := sqrt(min{y in Y, i in N,(t,ss) in SC}V2[y,i,t,ss]);
+printf 'Tensao Minima = %.4f',tenMin;
+let tenMax := sqrt(max{y in Y, i in N,(t,ss) in SC}V2[y,i,t,ss]);
+printf '\n\n\nTensao Maxima = %.4f\n\n',tenMax;
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+
+#printf'\n\n';
+#for{y in Y}{
+#	printf"\n\n\n",y;
+#	for{ss in Scen}{
+#		printf"\n\n\n",ss;
+#		printf"p(%d,%d,:,:) = [",y,ss;
+#		for{t in PER}{
+#			for{i in N}{
+#			printf"%.10f\t",PD[i]*FD[t,ss]*FatDem[y] + locEV[i,y]*dEV[t] - Pgd[i,t] - Phc[i,t,ss] + PsaeC[i,t] - PsaeD[i,t];
+#			}
+#			printf"\n";
+#		}
+#		printf"];\n\n";
+#	}
+#	printf"\n\n\n";
+#}
+#
+#printf'\n\n';
+#for{y in Y}{
+#	printf"\n\n\n",y;
+#	for{ss in Scen}{
+#		printf"\n\n\n",ss;
+#		printf"q(%d,%d,:,:) = [",y,ss;
+#		for{t in PER}{
+#			for{i in N}{
+#			printf"%.10f\t",QD[i]*FD[t,ss]*FatDem[y] + locEV[i,y]*qEV[t] + Qscb[i,t] + Qfcb[i]      + Qgd[i,t] - Qpv_hc[y,i,t,ss];
+#			}
+#			printf"\n";
+#		}
+#		printf"];\n\n";
+#	}
+#	printf"\n\n\n";
+#}
+
+
+
+printf"\n\n";
+for {y in Y}{
+	for{(i,j) in B}{
+		for{(t,ss) in SC}{
+			if (((V2[y,j,t,ss]*I2[y,i,j,t,ss]) - (P[y,i,j,t,ss]^2 + Q[y,i,j,t,ss]^2))/V2[y,j,t,ss]*I2[y,i,j,t,ss]) > 0.005 then {
+				printf"%.8f\t",(1 - (V2[y,j,t,ss]*I2[y,i,j,t,ss])/(P[y,i,j,t,ss]^2 + Q[y,i,j,t,ss]^2))*100;
+				let infeasibility[contRepeat,cont_w] := 1;
+			}
+		}
+	}
+}
+
+printf"\n\n Curtailment\n\n";
+for {i in PV}{
+	printf"\n\n";
+	for {ss in Scen}{
+		printf"\n";
+		for {t in PER}{
+			printf"%.4f\t",Pcurt[i,t,ss]*Sbase;
+		}
+	}
+	printf"\n";
+	for {ss in Scen}{
+		printf"\n";
+		for {t in PER}{
+			printf"%.4f\t",Pper[i]*fatGer[t,ss]*Sbase;
+		}
+	}
+}
+printf"\n\n ";
+for {i in PV}{
+	let PcurtSum[i] := sum{(t,ss) in SC}(Prob[t,ss]*Pcurt[i,t,ss]);
+	let PmaxSum[i] := sum{(t,ss) in SC}(Prob[t,ss]*Pper[i]*fatGer[t,ss]);
+}
+let PcurtSumSum := sum{i in PV}(PcurtSum[i]);
+let PmaxSumSum := sum{i in PV}(PmaxSum[i]);
+printf"\nPcurtSum\n\n";
+for {i in PV}{
+	printf"%.4f\t",PcurtSum[i]*Sbase;
+}
+printf"\n\nPmaxSum\n\n";
+for {i in PV}{
+	printf"%.4f\t",PmaxSum[i]*Sbase;
+}
+printf"\nPcurtSumSum\n\n";
+printf"%.4f\t",PcurtSumSum*Sbase;
+printf"\n\nPmaxSumSum\n\n";
+printf"%.4f\t",PmaxSumSum*Sbase;
+
+
+
+printf"\n\n||  =========  ||  =========  ||  =========  ||  =========  ||  =========  ||  =========    \n\n";
+
+let hosting_capacity[contRepeat,cont_w] := HC;
+let operational_costs[contRepeat,cont_w] := CostTotal;
+let penalization[contRepeat,cont_w] := penalty;
