@@ -1,0 +1,192 @@
+var alpha1 >=0;
+var alpha2 >=0;
+var alpha3 >=0;
+var alpha4 >=0;
+var alpha5 >=0;
+param M := 1e4;
+param V2_1 := 0.92^2;
+param V2_2 := 0.98^2;
+param V2_3 := 1.02^2;
+param V2_4 := 1.08^2;
+var V2;
+param Qpv_min := -440;
+param Qpv_max := 440;
+param omega1 := (0 - Qpv_max)/(sqrt(V2_2) - sqrt(V2_1));
+param omega2 := (Qpv_min - 0)/(sqrt(V2_4) - sqrt(V2_3));
+param ajust1 := 0.530483;
+param ajust2 := 0.472798;
+param Spv_in := 440;
+var Ppv_in;
+var Qpv_in;
+var Qpv_in_1;
+var Qpv_in_2;
+#var Qpv_in_;
+var Qpv_in_4;
+var Qpv_in_5;
+param Qfinal{1..100};
+param V2final{1..100};
+option solver gurobi;
+/* option gurobi_options 'FeasibilityTol=1e-9';
+ */
+
+maximize FO: alpha1 + alpha2 + alpha3 + alpha4 + alpha5;
+
+
+subject to PV02_operacao01:
+	V2 - V2_1 <= M*(1 - alpha1);
+
+subject to PV02_operacao02:
+	V2_1 - V2 <= M*(1 - alpha2);
+
+subject to PV02_operacao03 :
+	V2 - V2_2 <= M*(1 - alpha2);
+
+subject to PV02_operacao04 :
+	V2_2 - V2 <= M*(1 - alpha3);
+
+subject to PV02_operacao05:
+	V2 - V2_3 <= M*(1 - alpha3);
+
+subject to PV02_operacao06:
+	V2_3 - V2 <= M*(1 - alpha4);
+
+subject to PV02_operacao07:
+	V2 - V2_4 <= M*(1 - alpha4);
+
+subject to PV02_operacao08:
+	V2_4 - V2 <= M*(1 - alpha5);
+	
+subject to PV03_operacao:
+	alpha1 + alpha2 + alpha3 + alpha4 + alpha5 = 1;
+	
+
+subject to PV04_operacao01:
+	Qpv_in_1 = Qpv_max*alpha1;
+	
+	
+	
+subject to PV05_operacao01:
+	Qpv_in_2 <= 3.73*Qpv_max*alpha2;
+	
+subject to PV05_operacao02:
+	Qpv_in_2 >= 5.02*Qpv_min*alpha2;
+	
+subject to PV05_operacao03:
+	Qpv_in_2 <= Qpv_max + omega1*ajust1*(V2 - V2_1) - 5.02*Qpv_min*(1 - alpha2);
+	
+subject to PV05_operacao04:
+	Qpv_in_2 >= Qpv_max + omega1*ajust1*(V2 - V2_1) - 3.73*Qpv_max*(1 - alpha2);
+	
+	
+	
+subject to PV06_operacao01:
+	Qpv_in_4 <= 3.6*Qpv_max*alpha4;
+	
+subject to PV06_operacao02:
+	Qpv_in_4 >= 4.20*Qpv_min*alpha4;
+	
+subject to PV06_operacao03:
+	Qpv_in_4 <= Qpv_min + omega2*ajust2*(V2 - V2_4) - 4.20*Qpv_min*(1 - alpha4);
+	
+subject to PV06_operacao04:
+	Qpv_in_4 >= Qpv_min + omega2*ajust2*(V2 - V2_4) - 3.6*Qpv_max*(1 - alpha4);
+	
+	
+	
+subject to PV07_operacao01:
+	Qpv_in_5 = Qpv_min*alpha5;
+	
+	
+subject to PV08_operacao01:
+	Qpv_in = Qpv_in_1 + Qpv_in_2 + Qpv_in_4 + Qpv_in_5;
+	
+subject to teste_09:
+	-440 <= Qpv_in <= 440;
+	
+subject to teste_10:
+	0 <= Qpv_in_1 <= 440;	
+	
+subject to teste_11:
+	0 <= Qpv_in_2 <= 440;	
+	
+subject to teste_12:
+	-440 <= Qpv_in_4 <= 0;	
+	
+subject to teste_13:
+	-440 <= Qpv_in_5 <= 0;	
+	
+subject to teste_14:
+	alpha3*alpha4 = 0;
+
+subject to teste_15:
+	alpha1*alpha5 = 0;
+
+subject to teste_16:
+	alpha1*alpha4 = 0;	
+	
+subject to teste_17:
+	alpha3*alpha5 = 0;	
+	
+subject to teste_18:
+	alpha2*alpha3 = 0;	
+	
+subject to teste_19:
+	alpha2*alpha5 = 0;	
+	
+subject to teste_20:
+	alpha2*alpha4 = 0;	
+
+subject to teste_21:
+	alpha1*alpha3 = 0;	
+	
+subject to teste_22:
+	alpha4*alpha5 = 0;
+	
+subject to teste_23:
+	alpha1*alpha2 = 0;
+		
+for {i in 1..100}{
+
+	let V2 := (0.8 + 0.4/100*i)^2;
+	fix V2;
+	solve;
+	let V2final[i] := V2;
+	let Qfinal[i] := Qpv_in;
+	display alpha1;
+	display alpha2;
+	display alpha3;
+	display alpha4;
+	display alpha5;
+	display Qpv_in;
+	display Qpv_in_1;
+	display Qpv_in_2;
+	display Qpv_in_4;
+	display Qpv_in_5;
+
+}
+	
+/* display alpha1;
+display alpha2;
+display alpha3;
+display alpha4;
+display alpha5;
+display Qpv_in;
+display Qpv_in_1;
+display Qpv_in_2;
+display Qpv_in_4;
+display Qpv_in_5; */
+display Qfinal;
+printf '\n\n';
+for {i in 1..100}{
+
+	printf '\t%.4f',sqrt(V2final[i]);
+
+}
+printf '\n\n';
+printf '\n\n';
+for {i in 1..100}{
+
+	printf '\t%.1f',Qfinal[i];
+
+}
+printf '\n\n';

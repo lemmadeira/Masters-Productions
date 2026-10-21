@@ -1,0 +1,46 @@
+# Inicializa as variaveis e retira as restrições das vizinhanças do VND
+
+let {i in CB} Nfcb[i]     := round(Uniform(0,NMC));
+let {i in CB} Nscb_max[i] := round(Uniform(0,NMC));
+let {i in BB} Nsae[i]     := round(Uniform(0,NMB));
+let {i in PVds} Npv[i]      := round(Uniform(0,NMPV));
+let {i in GD} Ngd[i]      := round(Uniform(0,NMGD));
+let {y in Y, i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss] := 0;
+let {y in Y, i in PVin, (t,ss) in SC} k_pv_in[y,i,t,ss] := 0;
+
+
+let {i in CB} Nfcb_ngbh[i] := Nfcb[i];
+let {i in CB} Nscb_max_ngbh[i] := Nscb_max[i];
+let {i in BB} Nsae_ngbh[i] := Nsae[i];
+let {i in PVds} Npv_ngbh[i] := Npv[i];
+let {i in GD} Ngd_ngbh[i] := Ngd[i];
+let {y in Y, i in PVin, (t,ss) in SC} Npv_in_ngbh[y,i,t,ss] := 0;
+
+
+drop neighborhood_VND1_FCB01;
+drop neighborhood_VND1_FCB02;
+drop neighborhood_VND1_SCB01;
+drop neighborhood_VND1_SCB02;
+drop neighborhood_VND1_BB01;
+drop neighborhood_VND1_BB02;
+drop neighborhood_VND1_PV01;
+drop neighborhood_VND1_PV02;
+drop neighborhood_VND1_GD01;
+drop neighborhood_VND1_GD02;
+
+drop neighborhood_VND2_FCB01;
+drop neighborhood_VND2_FCB02;
+drop neighborhood_VND2_SCB01;
+drop neighborhood_VND2_SCB02;
+drop neighborhood_VND2_BB01;
+drop neighborhood_VND2_BB02;
+drop neighborhood_VND2_PV01;
+drop neighborhood_VND2_PV02;
+drop neighborhood_VND2_GD01;
+drop neighborhood_VND2_GD02;
+
+drop neighborhood_VND3_FCB01;
+drop neighborhood_VND3_SCB01;
+drop neighborhood_VND3_BB01;
+drop neighborhood_VND3_PV01;
+drop neighborhood_VND3_GD01;

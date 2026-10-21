@@ -1,0 +1,31 @@
+
+
+
+/* set S := {1..10000};
+param V{S};
+var alpha;
+for {i in S}{
+	let V[i] := 0.92 + (0.06/10000)*i;
+}
+
+minimize FO: sum{i in S}(((V[i] - 0.92) - alpha*(V[i]^2 - 0.92^2))^2);
+subject to restricao1: 0 <= alpha <= 1;
+
+option solver gurobi;
+solve;
+display alpha;
+ */
+
+set S := {1..10000};
+param V{S};
+var alpha;
+for {i in S}{
+	let V[i] := 1.02 + (0.06/10000)*i;
+}
+
+minimize FO: sum{i in S}(((V[i] - 1.08) - alpha*(V[i]^2 - 1.08^2))^2);
+subject to restricao1: 0 <= alpha <= 1;
+
+option solver gurobi;
+solve;
+display alpha;

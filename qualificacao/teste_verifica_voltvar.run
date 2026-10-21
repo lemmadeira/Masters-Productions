@@ -1,0 +1,48 @@
+param V{1..100};
+param Qpv{1..100};
+
+param V1 := 0.92;
+param V2 := 0.98;
+param V3 := 1.02;
+param V4 := 1.08;
+param omega1;
+param omega2;
+param Spv_in := 440;
+param Qmax := 0.44*Spv_in;
+param Qmin := -0.44*Spv_in;
+let omega1 := (0 - Qmax)/(V2 - V1);
+let omega2 := (Qmin - 0)/(V4 - V3);
+
+for {i in 1..100}{
+	let V[i] := (0.85 + 0.3/100*i)^2;
+	if (sqrt(V[i]))<=0.92 then {
+		let Qpv[i] := Qmax;
+	}
+	else {
+		if (sqrt(V[i]))<=0.98 then {
+			let Qpv[i] := Qmax + omega1*(sqrt(V[i]) - V1);
+		}
+		else {
+			if (sqrt(V[i]))<=1.02 then {
+				let Qpv[i] := 0;
+			}
+			else {
+				if (sqrt(V[i]))<=1.08 then {
+					let Qpv[i] := Qmin + omega2*(sqrt(V[i]) - V4);
+				}
+				else {
+					let Qpv[i] := Qmin;
+				}
+			}
+		}
+	}
+}
+printf '\n\n';
+for {i in 1..100}{
+	printf '\t%.4f',sqrt(V[i]);
+}
+printf '\n\n';
+for {i in 1..100}{
+	printf '\t%.4f',Qpv[i];
+}
+printf '\n\n';

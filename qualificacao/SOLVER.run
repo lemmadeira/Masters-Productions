@@ -1,0 +1,25 @@
+reset;
+
+include SOLVER_Rad_OPFvar33.dat;
+data bus33.dat;
+include OPF.dat;
+model OPFsolver.mod;
+
+
+option solver gurobi;
+/* option gurobi_options "mipgap = 0.01 timelim = 1309 numericfocus=3  bestobjstop= 89750000";
+ */
+option gurobi_options "mipgap = 0.05 numericfocus=3 timelim = 1200 solutionlimit=1";
+
+
+solve;
+
+
+
+display solve_result;
+display solve_result_num;
+
+
+include disp_variables.run;
+
+

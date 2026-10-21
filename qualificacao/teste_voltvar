@@ -1,0 +1,47 @@
+var alpha1;
+var alpha2;
+var alpha3;
+var alpha4;
+var alpha5;
+var FO;
+var x >= 0;
+param M := 1e18;
+param V2_1 := 0.92^2;
+param V2_2 := 0.98^2;
+param V2_3 := 1.02^2;
+param V2_4 := 1.08^2;
+param V2 := 1.05;
+
+solver option gurobi;
+
+minimize FO: x;
+
+subject to PV02_operacao01:
+	V2 - V2_1 <= M*(1 - alpha1);
+
+subject to PV02_operacao02:
+	V2_1 - V2 <= M*(1 - alpha2);
+
+subject to PV02_operacao03 :
+	V2 - V2_2 <= M*(1 - alpha2);
+
+subject to PV02_operacao04 :
+	V2_2 + V2 <= M*(1 - alpha3);
+
+subject to PV02_operacao05:
+	V2 - V2_3 <= M*(1 - alpha3);
+
+subject to PV02_operacao06:
+	V2_3 + V2 <= M*(1 - alpha4);
+
+subject to PV02_operacao07:
+	V2- V2_4 <= M*(1 - alpha4);
+
+subject to PV02_operacao08:
+	V2_4 + V2 <= M*(1 - alpha5);	
+	
+subject to PV03_operacao:
+	alpha1 + alpha2 + alpha3 + alpha4 + alpha5 = 1;
+	
+	
+	

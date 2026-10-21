@@ -1,0 +1,81 @@
+reset;
+set S ordered := {5, 10, 15, 20, 25};  
+
+# Create an indexed parameter to store elements
+param S_list {1..card(S)};  
+
+# Manually map the elements using a known order
+let S_list[1] := 5;
+let S_list[2] := 10;
+let S_list[3] := 15;
+let S_list[4] := 20;
+let S_list[5] := 25;
+
+# Generate a random index
+param rand_idx := round(Uniform(1, card(S)));  
+
+# Get the random element
+param rand_elem := S_list[rand_idx];
+
+display rand_elem;
+printf "\n\ncard(S) = %d\n\n",card(S);
+
+
+/*
+set S ordered := {5, 10, 15, 20, 25};  # Ordered set
+ # Retrieve elements by position
+param first_elem := ord(1, S);
+param third_elem := ord(3, S);
+printf "\n\nfirst := %d",first_elem;
+param t;
+var x{1..5};
+
+for {i in 1..5}{
+	let t := 5*round(Uniform(1,5));
+	display t;
+	let x[i] := ord(t, S);
+	printf "\nx[%d] = %d\n", i,x[i];
+}
+
+display x; */
+
+
+
+/* display first_elem;
+display third_elem; */
+
+
+/* 
+# Define an ordered set CB
+set CB ordered := {7, 14, 19, 24, 29, 30, 21, 32};
+
+# Define a parameterized vector Ncb{CB}
+param Ncb{CB} default 0;
+
+# Assign example values to Ncb (e.g., multiples of 10)
+let {i in CB} Ncb[i] := i * 10;
+
+# Create an indexed list from CB
+param CB_list {1..card(CB)};
+let {i in 1..card(CB)} CB_list[i] := ord(i, CB);  # Store ordered elements
+
+# Generate two distinct random indices
+param rand_idx1 := round(Uniform(1, card(CB)));
+param rand_idx2 := round(Uniform(1, card(CB)));
+
+# Ensure rand_idx2 is different from rand_idx1
+repeat while rand_idx2 = rand_idx1 {
+    let rand_idx2 := round(Uniform(1, card(CB)));
+}
+
+# Retrieve the actual CB elements at those positions
+param pos1 := CB_list[rand_idx1];
+param pos2 := CB_list[rand_idx2];
+
+# Swap values at pos1 and pos2
+param temp := Ncb[pos1];
+let Ncb[pos1] := Ncb[pos2];
+let Ncb[pos2] := temp;
+
+# Display results
+display pos1, pos2, Ncb; */

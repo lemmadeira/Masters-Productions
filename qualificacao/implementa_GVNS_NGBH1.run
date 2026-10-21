@@ -1,0 +1,74 @@
+# Fixed Capacitor Bank
+let cont := 0;
+let FCB_pos1 := CB_list[round(Uniform(1,cardCB))];
+let FCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+repeat while (Nfcb[FCB_pos1] == Nfcb[FCB_pos2] and cont < 10) {
+
+	let FCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+	let cont := cont + 1;
+	
+}
+
+let aux := Nfcb[FCB_pos1];
+let Nfcb[FCB_pos1] := Nfcb[FCB_pos2];
+let Nfcb[FCB_pos2] := aux;
+
+# Swichtable capacitor bank
+let cont := 0;
+let SCB_pos1 := CB_list[round(Uniform(1,cardCB))];
+let SCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+repeat while (Nscb_max[SCB_pos1] == Nscb_max[SCB_pos2] and cont < 10) {
+
+	let SCB_pos2 := CB_list[round(Uniform(1,cardCB))];
+	let cont := cont + 1;
+	
+}
+
+let aux := Nscb_max[SCB_pos1];
+let Nscb_max[SCB_pos1] := Nscb_max[SCB_pos2];
+let Nscb_max[SCB_pos2] := aux;
+
+# Photovoltaic panel
+let cont := 0;
+let PV_pos1 := PV_list[round(Uniform(1,cardPV))];
+let PV_pos2 := PV_list[round(Uniform(1,cardPV))];
+repeat while (Npv[PV_pos1] == Npv[PV_pos2] and cont < 10) {
+
+	let PV_pos2 := PV_list[round(Uniform(1,cardPV))];
+	let cont := cont + 1;
+	
+}
+
+let aux := Npv[PV_pos1];
+let Npv[PV_pos1] := Npv[PV_pos2];
+let Npv[PV_pos2] := aux;
+
+# Distributed generators
+let cont := 0;
+let GD_pos1 := GD_list[round(Uniform(1,cardGD))];
+let GD_pos2 := GD_list[round(Uniform(1,cardGD))];
+repeat while (Ngd[GD_pos1] == Ngd[GD_pos2] and cont < 10) {
+
+	let GD_pos2 := GD_list[round(Uniform(1,cardGD))];
+	let cont := cont + 1;
+	
+}
+
+let aux := Ngd[GD_pos1];
+let Ngd[GD_pos1] := Ngd[GD_pos2];
+let Ngd[GD_pos2] := aux;
+
+# Bateries
+let cont := 0;
+let BB_pos1 := BB_list[round(Uniform(1,cardBB))];
+let BB_pos2 := BB_list[round(Uniform(1,cardBB))];
+repeat while (Nsae[BB_pos1] == Nsae[BB_pos2] and cont < 10) {
+
+	let BB_pos2 := BB_list[round(Uniform(1,cardBB))];
+	let cont := cont + 1;
+	
+}
+
+let aux := Nsae[BB_pos1];
+let Nsae[BB_pos1] := Nsae[BB_pos2];
+let Nsae[BB_pos2] := aux;

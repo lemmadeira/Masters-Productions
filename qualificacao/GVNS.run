@@ -1,0 +1,214 @@
+reset;
+
+# -------------------- LOADING THE MODEL --------------------- #
+
+include OPFvar33.dat;
+data bus33.dat;
+include OPF.dat;
+
+include GVNSvar.dat;
+include VND_ngbh1.mod;
+include VND_ngbh2.mod;
+include VND_ngbh3.mod;
+
+model OPF.mod;
+drop PV03_operacao;
+drop PV04_operacao;
+drop PV05_operacao;
+drop PV06_operacao;
+drop PV07_operacao;
+
+# ------------------------------------------------------------ #
+
+# ---------------------- CHOSING THE SOLVER ------------------ #
+
+option solver gurobi;
+#option presolve 0;
+option gurobi_options 'mipgap = 0.001 timelim = 150';
+
+# ------------------------------------------------------------ #
+
+# ---------------- INICIALIZING GVNS VARIABLES --------------- #
+
+include inicializacao_var_restricoes.run;
+
+/* let {i in CB, t in PER} Nscb[i,t] := round(Nscb[i,t]);
+let {i in CB} Nfcb[i] := Nfcb_ngbh[i];
+let {i in CB} Nscb_max[i] := Nscb_max_ngbh[i];
+let {i in BB} Nsae[i] := Nsae_ngbh[i];
+let {i in PVds} Npv[i] := Npv_ngbh[i];
+let {i in GD} Ngd[i] := Ngd_ngbh[i];
+let {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss] := Npv_in_ngbh[y,i,t,ss];
+fix {i in CB} Nfcb[i];
+fix {i in CB} Nscb_max[i];
+fix {i in CB, t in PER} Nscb[i,t];
+fix {i in BB} Nsae[i];				
+fix {i in PVds} Npv[i];
+fix {i in GD} Ngd[i];
+fix {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss];
+
+#option gurobi_options "FeasibilityTol = 1e-10  mipgap = 0.001 timelim = 604800 logfreq = 5";
+solve FO;
+display FO;
+ */
+
+
+let incumbente := 1e30;		# Defininig an incumbent
+include verifica_voltvar.run;
+
+# ------------------------------------------------------------ #
+
+# ----------------------   THE BEGINNING OF ITERATION PROCESS:    GVNS     ------------------------- #
+
+repeat while (iter <= iter_max and ((time() - startTime) <= time_max) ) {
+
+	printf "\n\n\t\t\t ITERACAO %d\n\n",iter;
+	
+	#Perturbação
+	
+	if k == 1 then {
+	
+		include implementa_GVNS_NGBH1.run;
+		
+	}
+	
+	else {
+	
+		include implementa_GVNS_NGBH2.run;
+		
+	}
+	
+	if s == 1 then {
+		
+		include implementa_VND_NGBH1.run;
+		
+	}
+	
+	if s == 2 then {
+	
+		include implementa_VND_NGBH2.run;
+	
+	}
+	
+	if s == 3 then {
+	
+		include implementa_VND_NGBH3.run;
+	
+	}
+	
+	include verifica_voltvar.run;
+		
+	if k > k_max then {
+	
+		let k := 1;
+		include implementa_GVNS_NGBH2.run;
+		
+	}
+	
+	printf "\n\n----------------------------------------------------------------------------\n\n";
+	display time() - startTime;
+	printf "----------------------------------------------------------------------------\n\n";
+	let iter := iter + 1;
+	
+	if iter > iter_max || (time() - startTime >= time_max) then {
+	
+		#let M := 0;
+		#drop operacao01;
+		#drop operacao02;
+		#drop operacao03;
+		#drop operacao04;
+		#drop operacao05;
+		let {i in CB, t in PER} Nscb[i,t] := round(Nscb[i,t]);
+		let {i in CB} Nfcb[i] := Nfcb_ngbh[i];
+		let {i in CB} Nscb_max[i] := Nscb_max_ngbh[i];
+		let {i in BB} Nsae[i] := Nsae_ngbh[i];
+		let {i in PVds} Npv[i] := Npv_ngbh[i];
+		let {i in GD} Ngd[i] := Ngd_ngbh[i];
+		let {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss] := Npv_in_ngbh[y,i,t,ss];
+		fix {i in CB} Nfcb[i];
+		fix {i in CB} Nscb_max[i];
+		fix {i in CB, t in PER} Nscb[i,t];
+		fix {i in BB} Nsae[i];				
+		fix {i in PVds} Npv[i];
+		fix {i in GD} Ngd[i];
+		fix {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss];
+
+  		#option gurobi_options "FeasibilityTol = 1e-10  mipgap = 0.001 timelim = 604800 logfreq = 5";
+		solve FO;
+		
+		if sum{y in Y}( (Sbase/Vbase)*(sum {(i,j) in B}sum{(t,s) in SC}(I2pen[y,i,j,t,s]))   +   (Sbase)*(sum{i in N}( sum {(t,s) in SC}(QSpen_folga[y,i,t,s] + QSpen_excesso[y,i,t,s] + V2pen_folga[y,i,t,s] + V2pen_excesso[y,i,t,s] + S2pen[y,i,t,s])))  ) > 0.0001 then {
+		
+			printf "\n\n \t\t Solucao Infactivel\n\n";
+			#let iter := iter - 10;
+			
+		}
+		
+		else {
+		
+			printf "\n\n\t\t Solucao Factivel\n\n";
+		
+		}
+		
+	}
+	
+}
+
+# ------------------------------------------------------------ #
+
+include disp_variables.run;
+
+# ------------------------------------------------------------ #
+
+printf '\n\n\n\n\n\n\nSolucao via SOLVER\n\n\n\n';
+
+drop PV01_operacao;
+drop PV02_operacao;
+restore PV03_operacao;
+restore PV04_operacao;
+restore PV05_operacao;
+restore PV06_operacao;
+restore PV07_operacao;
+#let{y in Y,i in N,(t,s) in SC} V2[y,i,t,s] := 0;
+let{y in Y,i in N,(t,s) in SC} Qpv_in[y,i,t,s] := 0;
+option gurobi_options 'mipgap = 0.01 timelim = 1800';
+#solve FO;
+
+# ------------------------------------------------------------ #
+
+include disp_variables.run;
+
+# ------------------------------------------------------------ # 
+printf"\n\n Potencia maxima Subestacao = %.4f\n\n\n",max{y in Y,(t,ss) in SC}PS[y,1,t,ss]*Sbase;
+printf"\n\n Corrente maxima nas linhas = %.4f\n\n\n",Sbase/Vbase*sqrt(max{y in Y,(i,j) in B,(t,ss) in SC}I2[y,i,j,t,ss]);
+
+printf'\n\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for{ss in Scen}{
+		printf"\nSc = %4d\n\n",ss;
+		for{t in PER}{
+			for{i in N}{
+			printf"%.10f\t",PD[i]*FD[t,ss]*FatDem[y] + locEV[i,y]*dEV[t]             		  - Pgd[i,t] - Ppv_ds[i,t,ss] - Ppv_in[i,t,ss] + PsaeC[i,t] - PsaeD[i,t];
+			}
+			printf"\n";
+		}
+		printf"\n\n";
+	}
+	printf"\n\n\n";
+}
+
+printf'\n\n\n\n\n\n\n';
+for{y in Y}{
+	printf"\nAno = %4d\n\n",y;
+	for{ss in Scen}{
+		printf"\nAno = %4d\n\n",ss;
+		for{t in PER}{
+			for{i in N}{
+			printf"%.10f\t",QD[i]*FD[t,ss]*FatDem[y] + locEV[i,y]*qEV[t] + Qscb[i,t] + Qfcb[i] - Qgd[i,t] - Qpv_ds[i,t,ss] - Qpv_in[y,i,t,ss];
+			}
+			printf"\n";
+		}
+		printf"\n\n";
+	}
+	printf"\n\n\n";
+}

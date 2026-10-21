@@ -1,0 +1,72 @@
+/* param FRV := 4;
+param k_pv_in;
+param Qpv_max := 0.44;
+param Qpv_min = -0.44;
+param V1pv := 0.92;
+param V2pv := 0.98;
+param V3pv := 1.02;
+param V4pv := 1.08;
+param omega1 := (0 - Qpv_max)/(V2pv - V1pv);
+param omega2 := (Qpv_min - 0)/(V4pv - V3pv);
+param V2 := 0.8^2;
+param Qpv_in := 0;
+
+for {i in 1..1}{
+
+	if (sqrt(V2))<=V1pv then {
+		let k_pv_in := abs(Qpv_in - Qpv_max)/FRV;
+	}
+	else {
+		if (sqrt(V2))<=V2pv then { 
+			let k_pv_in := abs(Qpv_in - (Qpv_max + omega1*(sqrt(V2) - V1pv)) )/FRV;
+		}
+		else {
+			if (sqrt(V2))<=V3pv then {
+				let k_pv_in := abs(Qpv_in - 0)/FRV;
+			}
+			else {
+				if (sqrt(V2))<=V4pv then {
+					let k_pv_in := abs(Qpv_in - (Qpv_min + omega2*(sqrt(V2) - V4pv)) )/FRV;
+				}
+				else {
+					let k_pv_in := abs(Qpv_in - Qpv_min)/FRV;
+				}
+			}
+		}
+	} 
+	display k_pv_in;
+
+} */
+
+for {y in Y}{
+	for {i in PVin}{
+		for {(t,ss) in SC}{
+			if (sqrt(V2[y,i,t,ss]))<=V1pv then {
+				let k_pv_in[y,i,t,ss] := abs(Qpv_in[y,i,t,ss] - Qpv_max)/(FRV*iter)/Qpv_max;
+				let Npv_in_ngbh[y,i,t,ss] := Qpv_max/Qpv_max;
+			}
+			else {
+				if (sqrt(V2[y,i,t,ss]))<=V2pv then { 
+					let k_pv_in[y,i,t,ss] := abs(Qpv_in[y,i,t,ss] - (Qpv_max + omega1*(sqrt(V2[y,i,t,ss]) - V1pv)) )/(FRV*iter)/Qpv_max;
+					let Npv_in_ngbh[y,i,t,ss] := (Qpv_max + omega1*(sqrt(V2[y,i,t,ss]) - V1pv))/Qpv_max;
+				}
+				else {
+					if (sqrt(V2[y,i,t,ss]))<=V3pv then {
+						let k_pv_in[y,i,t,ss] := abs(Qpv_in[y,i,t,ss] - 0)/(FRV*iter)/Qpv_max;
+						let Npv_in_ngbh[y,i,t,ss] := 0;
+					}
+					else {
+						if (sqrt(V2[y,i,t,ss]))<=V4pv then {
+							let k_pv_in[y,i,t,ss] := abs(Qpv_in[y,i,t,ss] - (Qpv_min + omega2*(sqrt(V2[y,i,t,ss]) - V4pv)) )/(FRV*iter)/Qpv_max;
+							let Npv_in_ngbh[y,i,t,ss] := (Qpv_min + omega2*(sqrt(V2[y,i,t,ss]) - V4pv))/Qpv_max;
+						}
+						else {
+							let k_pv_in[y,i,t,ss] := abs(Qpv_in[y,i,t,ss] - Qpv_min)/(FRV*iter)/Qpv_max;
+							let Npv_in_ngbh[y,i,t,ss] := Qpv_min/Qpv_max;
+						}
+					}
+				}
+			} 
+		}
+	}
+}
