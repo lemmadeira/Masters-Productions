@@ -1,0 +1,259 @@
+reset;
+
+# -------------------- LOADING THE MODEL --------------------- #
+
+include OPFvar33.dat;
+data bus33.dat;
+include OPF.dat;
+
+include GVNSvar.dat;
+include VND_ngbh1.mod;
+include VND_ngbh2.mod;
+include VND_ngbh3.mod;
+
+model OPFupper.mod;
+model OPFlower.mod;
+drop PV03_operacao;
+drop PV04_operacao;
+drop PV05_operacao;
+drop PV06_operacao;
+drop PV07_operacao;
+
+# ------------------------------------------------------------ #
+
+# ---------------------- CHOSING THE SOLVER ------------------ #
+
+option solver gurobi;
+#option presolve 0;
+option gurobi_options 'mipgap = 0.001 timelim = 150';
+
+# ------------------------------------------------------------ #
+
+# ---------------- INICIALIZING GVNS VARIABLES --------------- #
+
+include inicializacao_var_restricoes.run;
+
+/* let {i in CB, t in PER} Nscb[i,t] := round(Nscb[i,t]);
+let {i in CB} Nfcb[i] := Nfcb_ngbh[i];
+let {i in CB} Nscb_max[i] := Nscb_max_ngbh[i];
+let {i in BB} Nsae[i] := Nsae_ngbh[i];
+let {i in PVds} Npv[i] := Npv_ngbh[i];
+let {i in GD} Ngd[i] := Ngd_ngbh[i];
+let {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss] := Npv_in_ngbh[y,i,t,ss];
+fix {i in CB} Nfcb[i];
+fix {i in CB} Nscb_max[i];
+fix {i in CB, t in PER} Nscb[i,t];
+fix {i in BB} Nsae[i];				
+fix {i in PVds} Npv[i];
+fix {i in GD} Ngd[i];
+fix {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss];
+
+#option gurobi_options "FeasibilityTol = 1e-10  mipgap = 0.001 timelim = 604800 logfreq = 5";
+solve FO;
+display FO;
+ */
+
+
+let incumbente := 1e30;		# Defininig an incumbent
+#include verifica_voltvar.run;
+
+# ------------------------------------------------------------ #
+
+# ----------------------   THE BEGINNING OF ITERATION PROCESS:    GVNS     ------------------------- #
+
+repeat while (iter <= iter_max and ((time() - startTime) <= time_max) ) {
+
+	printf "\n\n\t\t\t ITERACAO %d\n\n",iter;
+	
+	drop PVIN01_alocacao;
+	drop PVIN02_alocacao;
+	drop PVIN03_alocacao;
+	drop PVIN04_alocacao;
+	
+	fix{i in PVin,(t,s) in SC} Ppv_in[i,t,ss];
+	
+	## ---------- UPPER LEVEL SOLUTION ---------- ##
+	
+	#Perturbação
+	
+	if k == 1 then {
+	
+		include implementa_GVNS_NGBH1.run;
+		
+	}
+	
+	else {
+	
+		include implementa_GVNS_NGBH2.run;
+		
+	}
+	
+	if s == 1 then {
+		
+		include implementa_VND_NGBH1.run;
+		
+	}
+	
+	if s == 2 then {
+	
+		include implementa_VND_NGBH2.run;
+	
+	}
+	
+	if s == 3 then {
+	
+		include implementa_VND_NGBH3.run;
+	
+	}
+	
+	#include verifica_voltvar.run;
+		
+	if k > k_max then {
+	
+		let k := 1;
+		include implementa_GVNS_NGBH2.run;
+		
+	}
+	
+	## ------------------------------------------ ##
+	
+	## ---------- LOWER LEVEL SOLUTION ---------- ##
+	
+	drop P_balance;
+	drop Q_balance;
+	drop voltage_drop;
+	drop power_flow;
+	drop operacao01;
+	drop operacao02;
+	drop operacao03;
+	drop operacao04;
+	drop operacao05;
+	drop FCB01_alocation;
+	drop FCB02_alocation;
+	drop SCB01_alocation;
+	drop SCB02_alocation;
+	drop SCB03_alocation;
+	drop ESS01_alocation;
+	drop ESS02_alocation;
+	drop ESS03_alocation;
+	drop ESS01_operation;
+	drop ESS02_operation;
+	drop ESS03_operation;
+	drop ESS04_operation;
+	drop HC01;
+	
+	restore PVIN01_alocacao;
+	restore PVIN02_alocacao;
+	restore PVIN03_alocacao;
+	restore PVIN04_alocacao;
+	
+	fix{i in PVin} Ptotal[i];
+	unfix{i in PVin,(t,s) in SC} Ppv_in[i,t,ss];
+	
+	solve FOlower;
+	
+	unfix{i in PVin} Ptotal[i];
+	
+	drop PVIN01_alocacao;
+	drop PVIN02_alocacao;
+	drop PVIN03_alocacao;
+	drop PVIN04_alocacao;
+	
+	restore P_balance;
+	restore Q_balance;
+	restore voltage_drop;
+	restore power_flow;
+	restore operacao01;
+	restore operacao02;
+	restore operacao03;
+	restore operacao04;
+	restore operacao05;
+	restore FCB01_alocation;
+	restore FCB02_alocation;
+	restore SCB01_alocation;
+	restore SCB02_alocation;
+	restore SCB03_alocation;
+	restore ESS01_alocation;
+	restore ESS02_alocation;
+	restore ESS03_alocation;
+	restore ESS01_operation;
+	restore ESS02_operation;
+	restore ESS03_operation;
+	restore ESS04_operation;
+	restore HC01;
+	
+	## ------------------------------------------ ##
+	
+	printf "\n\n----------------------------------------------------------------------------\n\n";
+	display time() - startTime;
+	printf "----------------------------------------------------------------------------\n\n";
+	let iter := iter + 1;
+	
+	if iter > iter_max || (time() - startTime >= time_max) then {
+	
+		#let M := 0;
+		#drop operacao01;
+		#drop operacao02;
+		#drop operacao03;
+		#drop operacao04;
+		#drop operacao05;
+		let {i in CB, t in PER} Nscb[i,t] := round(Nscb[i,t]);
+		let {i in CB} Nfcb[i] := Nfcb_ngbh[i];
+		let {i in CB} Nscb_max[i] := Nscb_max_ngbh[i];
+		let {i in BB} Nsae[i] := Nsae_ngbh[i];
+		#let {i in PVds} Npv[i] := Npv_ngbh[i];
+		#let {i in GD} Ngd[i] := Ngd_ngbh[i];
+		#let {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss] := Npv_in_ngbh[y,i,t,ss];
+		fix {i in CB} Nfcb[i];
+		fix {i in CB} Nscb_max[i];
+		fix {i in CB, t in PER} Nscb[i,t];
+		fix {i in BB} Nsae[i];				
+		#fix {i in PVds} Npv[i];
+		#fix {i in GD} Ngd[i];
+		#fix {y in Y,i in PVin, (t,ss) in SC} Npv_in[y,i,t,ss];
+
+  		#option gurobi_options "FeasibilityTol = 1e-10  mipgap = 0.001 timelim = 604800 logfreq = 5";
+		solve FO;
+		
+		if sum{y in Y}( (Sbase/Vbase)*(sum {(i,j) in B}sum{(t,s) in SC}(I2pen[y,i,j,t,s]))   +   (Sbase)*(sum{i in N}( sum {(t,s) in SC}(QSpen_folga[y,i,t,s] + QSpen_excesso[y,i,t,s] + V2pen_folga[y,i,t,s] + V2pen_excesso[y,i,t,s] + S2pen[y,i,t,s])))  ) > 0.0001 then {
+		
+			printf "\n\n \t\t Solucao Infactivel\n\n";
+			#let iter := iter - 10;
+			
+		}
+		
+		else {
+		
+			printf "\n\n\t\t Solucao Factivel\n\n";
+		
+		}
+		
+	}
+	
+}
+
+# ------------------------------------------------------------ #
+
+include disp_variables.run;
+
+# ------------------------------------------------------------ #
+
+#printf '\n\n\n\n\n\n\nSolucao via SOLVER\n\n\n\n';
+#
+#drop PV01_operacao;
+#drop PV02_operacao;
+#restore PV03_operacao;
+#restore PV04_operacao;
+#restore PV05_operacao;
+#restore PV06_operacao;
+#restore PV07_operacao;
+##let{y in Y,i in N,(t,s) in SC} V2[y,i,t,s] := 0;
+#let{y in Y,i in N,(t,s) in SC} Qpv_in[y,i,t,s] := 0;
+#option gurobi_options 'mipgap = 0.01 timelim = 1800';
+#solve FO;
+#
+## ------------------------------------------------------------ #
+#
+#include disp_variables.run;
+#
+## ------------------------------------------------------------ # 
