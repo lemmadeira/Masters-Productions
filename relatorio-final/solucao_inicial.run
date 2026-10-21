@@ -1,0 +1,40 @@
+reset;
+
+# -------------------- LOADING THE MODEL --------------------- #
+
+include OPFvar69.dat;
+model OPF.mod;
+data bus69.dat;
+include OPF.dat;
+
+# ------------------------------------------------------------ #
+
+# --------------------- INICIAL SOLUTION --------------------- #
+
+/* include inicializacao_var_restricoes.run;
+fix {i in CB} Nfcb[i] := 0;
+fix {i in CB} Nscb_max[i] := 0;
+fix {i in CB, t in PER} Nscb[i,t] := 0;
+fix {i in BB} Nsae[i] := 0;				# The inicial solution doesn't consider any alocation
+fix {i in PV} Npv[i] := 0;
+fix {i in GD} Ngd[i] := 0;
+for {i in PV}{
+	for {(t,s) in SC}{
+		let Npv_in[i,t,s] := 0;
+		let Npv_in_ngbh[i,t,s] := Npv_in[i,t,s];
+	}
+} 
+
+solve FO;
+display FO;
+
+unfix {i in CB} Nfcb[i] ;
+unfix {i in CB} Nscb_max[i];
+unfix {i in CB, t in PER} Nscb[i,t];
+unfix {i in BB} Nsae[i];				
+unfix {i in PV} Npv[i];
+unfix {i in GD} Ngd[i];
+ */
+
+
+# ------------------------------------------------------------ #

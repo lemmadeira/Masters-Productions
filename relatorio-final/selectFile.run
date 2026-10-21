@@ -1,0 +1,113 @@
+if case==1 then {
+
+	if w==0 then {
+		option log_file 'resultsVVC00.log';
+	}
+	if w==0.1 then {
+		option log_file 'resultsVVC01.log';
+	}
+	if w==0.2 then {
+		option log_file 'resultsVVC02.log';
+	}
+	if w==0.3 then {
+		option log_file 'resultsVVC03.log';
+	}
+	if w==0.4 then {
+		option log_file 'resultsVVC04.log';
+	}
+	if w==0.5 then {
+		option log_file 'resultsVVC05.log';
+	}
+	if w==0.6 then {
+		option log_file 'resultsVVC06.log';
+	}
+	if w==0.7 then {
+		option log_file 'resultsVVC07.log';
+	}
+	if w==0.8 then {
+		option log_file 'resultsVVC08.log';
+	}
+	if w==0.9 then {
+		option log_file 'resultsVVC09.log';
+	}
+	if w==1.0 then {
+		option log_file 'resultsVVC10.log';
+	}
+	
+}
+
+if case==2 then {
+
+	if w==0 then {
+		option log_file 'resultsBB00.log';
+	}
+	if w==0.1 then {
+		option log_file 'resultsBB01.log';
+	}
+	if w==0.2 then {
+		option log_file 'resultsBB02.log';
+	}
+	if w==0.3 then {
+		option log_file 'resultsBB03.log';
+	}
+	if w==0.4 then {
+		option log_file 'resultsBB04.log';
+	}
+	if w==0.5 then {
+		option log_file 'resultsBB05.log';
+	}
+	if w==0.6 then {
+		option log_file 'resultsBB06.log';
+	}
+	if w==0.7 then {
+		option log_file 'resultsBB07.log';
+	}
+	if w==0.8 then {
+		option log_file 'resultsBB08.log';
+	}
+	if w==0.9 then {
+		option log_file 'resultsBB09.log';
+	}
+	if w==1.0 then {
+		option log_file 'resultsBB10.log';
+	}
+	
+}
+
+if case==3 then {
+
+	if w==0 then {
+		option log_file 'resultsVVCBB00.log';
+	}
+	if w==0.1 then {
+		option log_file 'resultsVVCBB01.log';
+	}
+	if w==0.2 then {
+		option log_file 'resultsVVCBB02.log';
+	}
+	if w==0.3 then {
+		option log_file 'resultsVVCBB03.log';
+	}
+	if w==0.4 then {
+		option log_file 'resultsVVCBB04.log';
+	}
+	if w==0.5 then {
+		option log_file 'resultsVVCBB05.log';
+	}
+	if w==0.6 then {
+		option log_file 'resultsVVCBB06.log';
+	}
+	if w==0.7 then {
+		option log_file 'resultsVVCBB07.log';
+	}
+	if w==0.8 then {
+		option log_file 'resultsVVCBB08.log';
+	}
+	if w==0.9 then {
+		option log_file 'resultsVVCBB09.log';
+	}
+	if w==1.0 then {
+		option log_file 'resultsVVCBB10.log';
+	}
+	
+}

@@ -1,0 +1,16 @@
+if ((iter/4) - floor(iter/4)) < 0.3 then {
+	let k_scb := 0;
+}
+if ((iter/4) - floor(iter/4)) < 0.6 then {
+	if ((iter/4) - floor(iter/4)) > 0.4 then {
+		let k_fcb := 0;
+	}
+}
+if ((iter/4) - floor(iter/4)) < 0.8 then {
+	if ((iter/4) - floor(iter/4)) > 0.7 then {
+		let k_sae := 0;
+	}
+}
+if ((iter/4) - floor(iter/4)) > 0.9 then {
+	let k_gd := 0;
+}

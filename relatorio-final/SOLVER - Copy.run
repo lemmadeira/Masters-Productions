@@ -1,0 +1,17 @@
+reset;
+
+include SOLVER_Rad_OPFvar.dat;
+model Rad_OPF_Fr.mod;
+data sistema417nos.dat;
+include Rad_OPF.dat;
+option solver gurobi;
+option gurobi_options " mipgap = 0.05 timelim = 180 logfreq = 5";
+/* option gurobi_options 'TimeLimit=12';
+ */
+
+solve;
+
+display solve_result;
+display solve_result_num;
+
+include disp_variables.run;

@@ -1,0 +1,40 @@
+reset;
+
+include SOLVER_Rad_OPFvar4.dat;
+data bus4.dat;
+include OPFmodified.dat;
+#data inicial_solution.dat;
+model OPFsolver.mod;
+
+option log_file 'results4nodesClassicalOptimization01.txt';
+option solver gurobi;
+/* option gurobi_options "mipgap = 0.01 timelim = 1309 numericfocus=3  bestobjstop= 89750000";
+ */
+#shell "gurobi -= ";
+option gurobi_options "outlev=1 MIPFocus=3 numericfocus=3 mipgap = 0.01  intfeastol=1e-9 feastol=1e-9";# MIPFocus=1 solutionlimit=10 ";
+display _nvars, _ncons;
+
+repeat while (cont_w) <= 9 {
+
+	let startTime := time();
+	solve;
+	display time() - startTime;
+	let bestTime := time() - startTime;
+
+	display solve_result;
+	display solve_result_num;
+
+	printf'\n\n\n\n';
+	printf'\n\n\n\n';
+	display w;
+	
+	
+	include disp_variablesModified.run;
+	let cont_w := cont_w + 1;
+	let w := w + 0.125;
+
+}
+
+
+
+
